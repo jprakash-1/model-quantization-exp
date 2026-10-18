@@ -6,6 +6,7 @@ importance matrix), "UD-Q4_K_XL" (download Unsloth's Dynamic quant).
 import json
 import os
 import re
+import shutil
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -16,7 +17,7 @@ from openai import OpenAI
 
 from qlab import config
 
-BASELINE = "f16"  # a T4 has no fast BF16 path, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
+BASELINE = "f16"  # P100/T4 have no BF16, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
 PORT = 8080
 
 
@@ -44,6 +45,13 @@ def build():
     if (llama_dir() / "build/bin/llama-server").exists():
         return print("llama.cpp already built")
     major, minor = torch.cuda.get_device_capability(0)
+    nvcc = os.environ.get("CUDACXX") or shutil.which("nvcc") or "/usr/local/cuda/bin/nvcc"
+    cuda = re.search(r"release (\d+)\.(\d+)", sh([nvcc, "--version"]))
+    print(f"GPU sm_{major}{minor}, nvcc {cuda.group(1)}.{cuda.group(2)} at {nvcc}")
+    if major < 7 and int(cuda.group(1)) >= 13:
+        raise RuntimeError("CUDA 13 cannot compile for Pascal (P100). Point CUDACXX at a CUDA 12.x nvcc, "
+                           "e.g. `ls /usr/local | grep cuda`, then os.environ['CUDACXX'] = '/usr/local/cuda-12.x/bin/nvcc'")
+    os.environ["CUDACXX"] = nvcc
     config.WORK.mkdir(parents=True, exist_ok=True)
     sh(f"git clone --depth 1 https://github.com/ggml-org/llama.cpp {llama_dir()}")
     sh(f"cmake -S {llama_dir()} -B {llama_dir()}/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES={major}{minor} "

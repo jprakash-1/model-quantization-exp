@@ -1,6 +1,6 @@
 """Track 1: Hugging Face Transformers on GPU. Every quantization method loads through from_pretrained.
 
-Baseline is BF16 on GPUs that support it (compute capability >= 8, e.g. A100/L4) and FP16 on a T4/P100.
+Baseline is BF16 on GPUs that support it (compute capability >= 8, e.g. A100/L4) and FP16 on a P100/T4.
 """
 import gc
 import time
