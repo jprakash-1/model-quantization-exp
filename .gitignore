@@ -4,3 +4,4 @@ data/
 results/*.kld
 __pycache__/
 .DS_Store
+results.zip

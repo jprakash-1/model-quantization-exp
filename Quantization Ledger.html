@@ -310,12 +310,22 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 @media (prefers-reduced-motion: no-preference) {
   .figure circle, .figure rect { transition: opacity .15s; }
 }
+
+.reply-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) { .reply-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.reply-k { font: 600 13px/1.35 var(--f-body); margin: 0 0 6px; }
+.reply { margin: 0; font: 12.5px/1.5 var(--f-mono); white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; color: var(--ink-2); max-height: 230px; overflow: auto; }
+.run-setup th { white-space: nowrap; vertical-align: top; }
+.run-setup td { color: var(--ink-2); }
+.qa { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 14.5px; }
+.qa li { margin-bottom: 8px; }
+.qa b { color: var(--ink); }
 </style>
 
 <header class="top">
   <div class="wrap hero">
     <div class="hero-text">
-      <div class="kicker">A field guide to LLM quantization · 5 models · 6 engines · 9 toolkits</div>
+      <div class="kicker">A field guide to LLM quantization · 5 models · 6 engines · 9 toolkits · 1 run of our own</div>
       <h1>Quantization Ledger</h1>
       <p class="lede">What you gain and what you lose when you shrink a model: accuracy, VRAM, speed and drift, measured on real models and real engines. Every number links to its source.</p>
     </div>
@@ -326,16 +336,16 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 <nav class="tabs" aria-label="Chapters">
   <div class="wrap">
     <div class="tablist" role="tablist">
-      <button type="button" role="tab" class="tab" id="tab-start" data-panel="start" aria-controls="start" aria-selected="true"><span class="tab-n">1</span><span class="tab-name">Start here</span></button><button type="button" role="tab" class="tab" id="tab-models" data-panel="models" aria-controls="models" aria-selected="false"><span class="tab-n">2</span><span class="tab-name">Models</span></button><button type="button" role="tab" class="tab" id="tab-engines" data-panel="engines" aria-controls="engines" aria-selected="false"><span class="tab-n">3</span><span class="tab-name">Engines</span></button><button type="button" role="tab" class="tab" id="tab-tools" data-panel="tools" aria-controls="tools" aria-selected="false"><span class="tab-n">4</span><span class="tab-name">Toolkits</span></button><button type="button" role="tab" class="tab" id="tab-findings" data-panel="findings" aria-controls="findings" aria-selected="false"><span class="tab-n">5</span><span class="tab-name">Findings</span></button><button type="button" role="tab" class="tab" id="tab-glossary" data-panel="glossary" aria-controls="glossary" aria-selected="false"><span class="tab-n">6</span><span class="tab-name">Glossary</span></button><button type="button" role="tab" class="tab" id="tab-sources" data-panel="sources" aria-controls="sources" aria-selected="false"><span class="tab-n">7</span><span class="tab-name">Sources</span></button>
+      <button type="button" role="tab" class="tab" id="tab-start" data-panel="start" aria-controls="start" aria-selected="true"><span class="tab-n">1</span><span class="tab-name">Start here</span></button><button type="button" role="tab" class="tab" id="tab-models" data-panel="models" aria-controls="models" aria-selected="false"><span class="tab-n">2</span><span class="tab-name">Models</span></button><button type="button" role="tab" class="tab" id="tab-engines" data-panel="engines" aria-controls="engines" aria-selected="false"><span class="tab-n">3</span><span class="tab-name">Engines</span></button><button type="button" role="tab" class="tab" id="tab-tools" data-panel="tools" aria-controls="tools" aria-selected="false"><span class="tab-n">4</span><span class="tab-name">Toolkits</span></button><button type="button" role="tab" class="tab" id="tab-findings" data-panel="findings" aria-controls="findings" aria-selected="false"><span class="tab-n">5</span><span class="tab-name">Findings</span></button><button type="button" role="tab" class="tab" id="tab-run" data-panel="run" aria-controls="run" aria-selected="false"><span class="tab-n">6</span><span class="tab-name">Our T4 run</span></button><button type="button" role="tab" class="tab" id="tab-glossary" data-panel="glossary" aria-controls="glossary" aria-selected="false"><span class="tab-n">7</span><span class="tab-name">Glossary</span></button><button type="button" role="tab" class="tab" id="tab-sources" data-panel="sources" aria-controls="sources" aria-selected="false"><span class="tab-n">8</span><span class="tab-name">Sources</span></button>
     </div>
-    <div class="progress"><div class="progress-bar" id="progress-bar"></div><span class="progress-t" id="progress-t">1 of 7 chapters opened</span></div>
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div><span class="progress-t" id="progress-t">1 of 8 chapters opened</span></div>
   </div>
 </nav>
 
 <main class="wrap">
 <div class="panel" id="start" role="tabpanel" aria-labelledby="tab-start">
   <div class="panel-head">
-    <div class="eyebrow">Step 1 of 7</div>
+    <div class="eyebrow">Step 1 of 8</div>
     <h2 class="panel-title">Start here</h2>
     <p class="panel-lede">Quantization stores a model's weights with fewer bits. That shrinks memory and speeds up generation, but every rounding step moves the model a little away from the original. This guide shows how far, on real models and real engines.</p>
   </div>
@@ -371,7 +381,7 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 
   </div>
   <h3 class="path-h">Your route through the guide</h3>
-  <div class="path"><a class="path-card" href="#models"><span class="path-n">2</span><span class="path-t">Models</span><span class="path-d">Five real models, every format measured</span></a><a class="path-card" href="#engines"><span class="path-n">3</span><span class="path-t">Engines</span><span class="path-d">Who runs which format, and how fast</span></a><a class="path-card" href="#tools"><span class="path-n">4</span><span class="path-t">Toolkits</span><span class="path-d">What makes quantized checkpoints</span></a><a class="path-card" href="#findings"><span class="path-n">5</span><span class="path-t">Findings</span><span class="path-d">Patterns across sources, plus a self-check</span></a><a class="path-card" href="#glossary"><span class="path-n">6</span><span class="path-t">Glossary</span><span class="path-d">81 terms, each with a reference</span></a><a class="path-card" href="#sources"><span class="path-n">7</span><span class="path-t">Sources</span><span class="path-d">How every number was checked</span></a></div>
+  <div class="path"><a class="path-card" href="#models"><span class="path-n">2</span><span class="path-t">Models</span><span class="path-d">Five real models, every format measured</span></a><a class="path-card" href="#engines"><span class="path-n">3</span><span class="path-t">Engines</span><span class="path-d">Who runs which format, and how fast</span></a><a class="path-card" href="#tools"><span class="path-n">4</span><span class="path-t">Toolkits</span><span class="path-d">What makes quantized checkpoints</span></a><a class="path-card" href="#findings"><span class="path-n">5</span><span class="path-t">Findings</span><span class="path-d">Patterns across sources, plus a self-check</span></a><a class="path-card" href="#run"><span class="path-n">6</span><span class="path-t">Our T4 run</span><span class="path-d">22 formats of Qwen3-4B, measured end to end</span></a><a class="path-card" href="#glossary"><span class="path-n">7</span><span class="path-t">Glossary</span><span class="path-d">81 terms, each with a reference</span></a><a class="path-card" href="#sources"><span class="path-n">8</span><span class="path-t">Sources</span><span class="path-d">How every number was checked</span></a></div>
   <section class="block" id="glance">
   <div class="sec-head">
     <h2>Five models at a glance</h2>
@@ -383,7 +393,7 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 </div>
 <div class="panel" id="models" role="tabpanel" aria-labelledby="tab-models" hidden>
   <div class="panel-head">
-    <div class="eyebrow">Step 2 of 7</div>
+    <div class="eyebrow">Step 2 of 8</div>
     <h2 class="panel-title">Models</h2>
     <p class="panel-lede">Pick a model. Each one comes from a different study, so compare formats within a model, not across models.</p>
   </div>
@@ -518,7 +528,7 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 </div>
 <div class="panel" id="engines" role="tabpanel" aria-labelledby="tab-engines" hidden>
   <div class="panel-head">
-    <div class="eyebrow">Step 3 of 7</div>
+    <div class="eyebrow">Step 3 of 8</div>
     <h2 class="panel-title">Engines</h2>
     <p class="panel-lede">A format only helps if your serving engine has a fast kernel for it on your GPU. Start with the support table, then see how engines compare under load.</p>
   </div>
@@ -602,7 +612,7 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 </div>
 <div class="panel" id="tools" role="tabpanel" aria-labelledby="tab-tools" hidden>
   <div class="panel-head">
-    <div class="eyebrow">Step 4 of 7</div>
+    <div class="eyebrow">Step 4 of 8</div>
     <h2 class="panel-title">Toolkits</h2>
     <p class="panel-lede">The libraries that turn a full-precision model into a quantized checkpoint, and how Hugging Face Transformers loads them.</p>
   </div>
@@ -666,7 +676,7 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
 </div>
 <div class="panel" id="findings" role="tabpanel" aria-labelledby="tab-findings" hidden>
   <div class="panel-head">
-    <div class="eyebrow">Step 5 of 7</div>
+    <div class="eyebrow">Step 5 of 8</div>
     <h2 class="panel-title">Findings</h2>
     <p class="panel-lede">What holds when the same pattern shows up in more than one source. Then test yourself.</p>
   </div>
@@ -751,11 +761,191 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
     <div class="quiz-score" id="quiz-score"></div>
   </div>
 
-  <div class="panel-nav"><a class="pn prev" href="#tools"><span class="pn-k">Previous</span><span class="pn-t">← Toolkits</span></a><a class="pn next" href="#glossary"><span class="pn-k">Next</span><span class="pn-t">Glossary →</span></a></div>
+  <div class="panel-nav"><a class="pn prev" href="#tools"><span class="pn-k">Previous</span><span class="pn-t">← Toolkits</span></a><a class="pn next" href="#run"><span class="pn-k">Next</span><span class="pn-t">Our T4 run →</span></a></div>
+</div>
+<div class="panel" id="run" role="tabpanel" aria-labelledby="tab-run" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 6 of 8</div>
+    <h2 class="panel-title">Our T4 run: Qwen3-4B, 22 ways</h2>
+    <p class="panel-lede">The earlier chapters collect other people's numbers. Here the same model was measured in 22 formats on the same hardware, with the same questions and the same code. It covers memory, speed, drift and accuracy, plus how long everything took.</p>
+  </div>
+
+  <section class="block" id="run-setup">
+  <div class="sec-head">
+    <h2>Setup</h2>
+    <p>Two tracks ran in parallel, one per GPU. Each is compared with its own 16-bit baseline. Compare drift within a track, because the two tracks measure perplexity differently (see caveats).</p>
+  </div>
+  <div class="tbl-wrap"><table class="run-setup"><tbody>
+    <tr><th>Model</th><td><code>Qwen/Qwen3-4B-Instruct-2507</code>, 8.05 GB in FP16</td></tr>
+    <tr><th>Hardware</th><td>Kaggle, 2 × Tesla T4 15 GB (Turing, compute capability 7.5, ~320 GB/s), driver 580.178.04. Transformers track on GPU 0, llama.cpp track on GPU 1</td></tr>
+    <tr><th>Software</th><td>torch 2.11.0+cu128 · transformers 5.20.1 · bitsandbytes 0.50.2 · hqq 0.2.8.post1 · llama.cpp 547208d built with CUDA for sm_75</td></tr>
+    <tr><th>Formats</th><td><b>Transformers:</b> FP16, FP8 checkpoint, bnb LLM.int8, NF4, NF4 + double quant, FP4, Unsloth dynamic 4-bit, HQQ 4/3/2-bit (group 64). <b>llama.cpp:</b> F16, Q8_0, Q6_K, Q5_K_M, Q4_K_M (± imatrix), IQ4_XS-imat, Q3_K_M-imat, Q2_K (± imatrix), Unsloth UD-Q4_K_XL and UD-Q2_K_XL. The imatrix is Unsloth's</td></tr>
+    <tr><th>Accuracy</th><td>GSM8K test, first 250 questions, 0-shot chat, greedy, up to 512 tokens. <i>Strict</i> means the final <code>#### n</code> line is right; <i>flexible</i> means the last number is right. ARC-Challenge test, first 250, answer letter only. <i>Lost / gained</i> means questions the baseline got right and the variant got wrong, or the other way round</td></tr>
+    <tr><th>Drift</th><td>wikitext-2 test, 20 × 512 tokens: mean and p99 KL divergence from the baseline's next-token distribution, top-1 agreement, perplexity</td></tr>
+    <tr><th>Speed</th><td>Single stream: prefill 512 tokens, decode 128 (Transformers: median of 3; llama.cpp: llama-bench pp512 / tg128). Workload: Transformers in batches of 16, llama-server with 8 parallel slots</td></tr>
+    <tr><th>Memory</th><td>Peak GPU memory from NVML, sampled every 50 ms across the speed test and all 500 questions</td></tr>
+    <tr><th>Code</th><td><a href="https://github.com/jprakash-1/model-quantization-exp/blob/main/kaggle_master.ipynb" target="_blank" rel="noopener">kaggle_master.ipynb</a> · <a href="https://github.com/jprakash-1/model-quantization-exp/blob/main/qlab/run.py" target="_blank" rel="noopener">qlab/run.py</a> · <a href="https://github.com/jprakash-1/model-quantization-exp/blob/main/results/summary.csv" target="_blank" rel="noopener">results/summary.csv</a> · every number below comes from <code>results/&lt;track&gt;-&lt;variant&gt;/metrics.json</code></td></tr>
+  </tbody></table></div>
+  <div class="notice"><div class="notice-k">What to notice</div><ul>
+    <li>8-bit costs nothing in quality: Q8_0 KLD 0.002, bnb-int8 0.009. But bnb-int8 decodes 3.5× <i>slower</i> than FP16.</li>
+    <li>The best 4-bit formats are llama.cpp K-quants: 2.5 GB, 59–70 tok/s (2× F16), GSM8K within 1–3 points of the baseline.</li>
+    <li>The cliff is between 3 and 2 bits, and calibration moves it: Q2_K keeps 55.6% on GSM8K, and Q2_K with the imatrix keeps 80.0%. Uncalibrated HQQ fails at 3-bit.</li>
+    <li>Q6_K has a <i>lower</i> perplexity than F16, while KLD and flipped answers keep rising as bits drop.</li>
+  </ul></div>
+  </section>
+
+  <section class="block" id="run-picks">
+  <div class="sec-head"><h2>Picks for one 15 GB T4</h2><p>Each pick is compared with its own track's 16-bit baseline: F16 in llama.cpp (GSM8K 92.8%, ARC 88.0%, 30.7 tok/s).</p></div>
+  <div class="glance" id="run-glance"></div>
+  </section>
+
+  <section class="block" id="run-charts">
+  <div class="sec-head"><h2>Accuracy, drift, speed and memory</h2><p><span style="color:var(--s2)">●</span> llama.cpp GGUF · <span style="color:var(--s1)">●</span> Transformers. Hover over any point or bar for its numbers.</p></div>
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">GSM8K vs bits per weight</div>
+      <div class="f-sub">flexible match, % of 250 · dashed = 16-bit baselines · log x</div>
+      <div class="chart" id="c-run-acc"></div>
+      <div class="legend"><span><i style="background:var(--s2)"></i>llama.cpp</span><span><i style="background:var(--s1)"></i>Transformers</span><span><i class="dash"></i>baseline</span></div>
+      <div class="cite">bits per weight = file or GPU size × 8 ÷ the baseline's parameter count, so it includes embeddings and scales</div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Drift vs size</div>
+      <div class="f-sub">mean KL divergence from the track's baseline · both axes log</div>
+      <div class="chart" id="c-run-kld"></div>
+      <div class="legend"><span><i style="background:var(--s2)"></i>llama.cpp</span><span><i style="background:var(--s1)"></i>Transformers</span></div>
+      <div class="cite">wikitext-2, 20 × 512 tokens · compare within a colour</div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Decode speed vs size</div>
+      <div class="f-sub">single stream, tok/s · curve = 320 GB/s ÷ size, the bandwidth ceiling</div>
+      <div class="chart" id="c-run-speed"></div>
+      <div class="legend"><span><i style="background:var(--s2)"></i>llama.cpp</span><span><i style="background:var(--s1)"></i>Transformers</span><span><i class="dash"></i>T4 ceiling</span></div>
+    </div>
+    <div class="figure">
+      <div class="f-title">GSM8K answers lost and gained</div>
+      <div class="f-sub">vs the track's baseline, out of 250 · bars past 120 are cut</div>
+      <div class="chart" id="c-run-flips"></div>
+      <div class="legend"><span><i style="background:var(--crit)"></i>lost</span><span><i style="background:var(--good)"></i>gained</span></div>
+    </div>
+  </div>
+  <div class="figure" style="margin-top:18px">
+    <div class="f-title">GPU memory: weights and everything else</div>
+    <div class="f-sub">peak GB during the speed test and 500 questions · dashed = T4 capacity (15 GB)</div>
+    <div class="chart" id="c-run-mem"></div>
+    <div class="legend"><span><i style="background:var(--s2)"></i>weights, llama.cpp</span><span><i style="background:var(--s1)"></i>weights, Transformers</span><span><i style="background:var(--rule-strong)"></i>KV cache, activations, buffers</span></div>
+  </div>
+  </section>
+
+  <section class="block" id="run-tables">
+  <div class="sec-head"><h2>Every number</h2><p>Retained = GSM8K flexible ÷ baseline. The underlined cell in each column is the best non-baseline value.</p></div>
+  <h3>llama.cpp GGUF</h3>
+  <div class="tbl-wrap"><table id="t-run-gguf"></table></div>
+  <h3>Hugging Face Transformers</h3>
+  <div class="tbl-wrap"><table id="t-run-hf"></table></div>
+  <h3>Under the workload</h3>
+  <div class="h3-note">500 questions per variant. Transformers latency is the time of the batch of 16 that the question was in. llama-server TTFT and per-stream decode come from its own timings, with 8 requests in flight.</div>
+  <div class="tbl-wrap"><table id="t-run-serve"></table></div>
+  <h3>Where the time went</h3>
+  <div class="h3-note">Seconds per phase. Make = quantize, or download for UD files. Load = load and quantize on load. Total run: about 2 h 45 min per track in parallel, plus a second session of about 4 h for HQQ and the Unsloth fix.</div>
+  <div class="tbl-wrap"><table id="t-run-time"></table></div>
+  <div class="cite">Source: <a href="https://github.com/jprakash-1/model-quantization-exp/blob/main/results/summary.csv" target="_blank" rel="noopener">results/summary.csv</a> · raw logs in each <code>results/&lt;variant&gt;/</code></div>
+  </section>
+
+  <section class="block" id="run-findings">
+  <div class="sec-head"><h2>Thirteen findings</h2><p>Each line of evidence names the result files or columns it comes from.</p></div>
+  <div class="findings"><div class="finding"><h4>8-bit is free in quality, not always in speed</h4><div><p>Q8_0 drifts the least of anything measured (mean KLD 0.002, 97.4% top-1 agreement). Its 7 lost and 5 gained GSM8K answers are noise. bnb-int8 is just as faithful (KLD 0.009, GSM8K 93.2% vs FP16 92.4%), but it decodes at <b>4.6 tok/s against 16.3 for FP16</b>, and its GSM8K run took 2,071 s against 849 s. LLM.int8 splits outlier columns into a separate 16-bit matmul in every layer, and that costs more time than the smaller weights save.</p><div class="ev">gguf-Q8_0 · hf-bnb-int8 · hf-fp16 / metrics.json</div></div></div><div class="finding"><h4>Decode speed follows bytes read, until dequantization costs more</h4><div><p>Every new token reads every weight once, so tok/s × file size is the bandwidth actually used. llama.cpp F16: 8.05 GB × 30.7 = <b>247 GB/s, 77% of the T4's ~320 GB/s</b>. Q8_0 reaches 196 GB/s, Q4_K_M 173, and Q2_K only 115. So 2-bit decodes no faster than 4-bit (69.0 vs 69.4 tok/s): the smaller the format, the more of each token goes to unpacking. IQ4_XS-imat is the fastest file here (76.4 tok/s, 2.5× F16).</p><div class="ev">chart “Decode speed vs size” below · llama-bench tg128</div></div></div><div class="finding"><h4>Same 4 bits, different code books</h4><div><p>In Transformers at 4-bit, FP4 drifts twice as much as NF4 (KLD 0.136 vs 0.071, 14 vs 11 answers lost). NF4's levels follow the bell-shaped weight distribution, and FP4's do not. Double quantization (nf4-dq) cuts peak memory by 0.26 GB at the same KLD (0.0715). HQQ 4-bit (group 64, no calibration) matches NF4's drift (0.075) and has the best strict GSM8K of the HF 4-bit formats (89.6% vs 80.8%).</p><div class="ev">hf-bnb-fp4 · hf-bnb-nf4 · hf-bnb-nf4-dq · hf-hqq4</div></div></div><div class="finding"><h4>Calibration is worth most where bits are scarce</h4><div><p>The importance matrix costs nothing at inference (same file size), and it matters more the fewer bits there are. At Q4_K_M it cuts KLD by 29% (0.040 → 0.028) and GSM8K doesn't change (89.6%). At Q2_K it cuts KLD by 55% (0.711 → 0.320), and it lifts <b>GSM8K from 55.6% to 80.0%</b>, ARC from 50.4% to 74.0% and perplexity from 21.7 to 14.9. HQQ has no calibration and nothing to fall back on: at 3-bit, GSM8K is 49.2%, and at 2-bit the output is no longer text.</p><div class="ev">gguf-Q4_K_M vs -imat · gguf-Q2_K vs -imat · hf-hqq3 · hf-hqq2</div></div></div><div class="finding"><h4>Per-layer mixing pays at 4-bit, not at 2-bit here</h4><div><p>UD-Q4_K_XL has the lowest 4-bit drift (KLD 0.027) and the best 4-bit GSM8K (91.6%), for 0.05 GB more than Q4_K_M. It decodes slower, though (58.7 vs 69.7 tok/s). At 2-bit, UD-Q2_K_XL is no better than plain Q2_K-imat (KLD 0.302 vs 0.320, GSM8K 79.2% vs 80.0%, ARC 69.6% vs 74.0%), and it is slower. In Transformers, Unsloth's dynamic 4-bit drifts 31% less than NF4 (0.049 vs 0.071), because it keeps 10 sensitive blocks in 16-bit, which costs 0.9 GB.</p><div class="ev">gguf-UD-Q4_K_XL · gguf-UD-Q2_K_XL · hf-unsloth-dyn4</div></div></div><div class="finding"><h4>Perplexity hides most of the damage</h4><div><p>Q6_K has a <i>lower</i> perplexity than its own F16 baseline (11.150 vs 11.193), yet it picks a different next token 4% of the time. Q4_K_M raises perplexity by only 2.6%, but it disagrees on 1 token in 11 and loses 10 GSM8K answers. IQ4_XS-imat has a lower perplexity than Q4_K_M and loses more answers (13 vs 10). Across the ladder, KLD tracks answers lost far better than perplexity does.</p><div class="ev">drift columns in the tables below</div></div></div><div class="finding"><h4>The benchmark decides what you see, but not always in the same direction</h4><div><p>Without calibration, HQQ at 3-bit keeps 83% of FP16's ARC score (73.2%) but only 53% of its GSM8K (49.2%). Short multiple-choice answers survive, and long reasoning does not. At 2-bit in GGUF, it is the other way round: UD-Q2_K_XL keeps 79% of ARC and 85% of GSM8K. A one-letter answer leaves no room to recover from one bad token.</p><div class="ev">hf-hqq3 · gguf-UD-Q2_K_XL · eval.json</div></div></div><div class="finding"><h4>Broken quants talk longer, and that costs latency</h4><div><p>The F16 model averages 254 tokens per GSM8K answer, and 18 of 250 answers hit the 512-token cap. Q2_K averages 358, with <b>106 at the cap</b>, and its median latency rises from 11.7 s to 20.3 s. hqq3 averages 412 tokens with 136 at the cap, and hqq2 fills all 512 tokens on every question. The imatrix brings Q2_K's cap hits down to 39. A worse quant can be slower in practice even when its tok/s is higher.</p><div class="ev">gsm8k_tokens_mean · gsm8k_hit_max_tokens · gsm8k_latency_p50_s</div></div></div><div class="finding"><h4>bitsandbytes 4-bit breaks the answer format before the math</h4><div><p>The strict-minus-flexible gap is the share of answers with the right number but no valid <code>#### n</code> line. It is 0.8 points for FP16 and at most 1.6 for every GGUF variant, but <b>8.8 for NF4, 9.6 for NF4-dq and 6.4 for Unsloth dyn4</b>. The typical failure copies the prompt's template literally: <code>#### &lt;number&gt;70000&lt;/number&gt;</code>.</p><div class="ev">strict_gap · sample answers below</div></div></div><div class="finding"><h4>Your GPU decides the format</h4><div><p>A T4 (compute capability 7.5) has no BF16 and no FP8 tensor cores, so the baseline is FP16. Qwen's FP8 checkpoint loads, but Transformers dequantizes it to 16-bit, so it takes the same 8.05 GB and runs at the same speed (15.1 vs 16.3 tok/s). What it does measure is pure FP8 rounding error: KLD 0.004, the smallest drift in the Transformers track, and within the noise on GSM8K.</p><div class="ev">hf-fp8 · env.gpu in metrics.json</div></div></div><div class="finding"><h4>The engine matters more than the format for speed</h4><div><p>On the same FP16 weights and the same GPU, llama.cpp prefills 2,562 tok/s and decodes 30.7 tok/s; Transformers manages 1,307 and 16.3. Under the GSM8K workload, llama-server with 8 slots produced 152 tok/s, against 77 tok/s for Transformers with batches of 16. The fastest Transformers 4-bit format (unsloth-dyn4, 12.6 tok/s) is slower than llama.cpp running FP16.</p><div class="ev">prefill_tps · decode_tps · gsm8k_throughput_tps</div></div></div><div class="finding"><h4>The weights are not the whole memory bill</h4><div><p>llama.cpp adds a nearly constant 1.43 GB on top of the file (KV cache for 8 slots × 1,024 tokens, plus compute buffers), whatever the quant. Transformers adds 2.4–3.0 GB (batch 16 × 512 new tokens of KV cache, plus full-vocabulary logits), so a 2.6 GB NF4 model peaks at 5.6 GB. Every variant fits a 15 GB T4. FP16 in Transformers peaked at 10.7 GB.</p><div class="ev">chart “GPU memory” below · peak_gpu_gb − size_gb</div></div></div><div class="finding"><h4>Quantizing is cheap, and calibration is the slow part</h4><div><p>On 2 CPU threads, Q8_0 took 30 s, the K-quants 2.7–5.7 min, and the imatrix added 3.5–4.6 min (Q4_K_M: 326 → 539 s). IQ4_XS took 15 min. bitsandbytes and HQQ quantize while loading, in 31–85 s, on every load.</p><div class="ev">quant_s · load_s</div></div></div></div>
+  </section>
+
+  <section class="block" id="run-replies">
+  <div class="sec-head"><h2>What the failures look like</h2><p>Real replies from <code>eval.json</code>. GSM8K #3: “James decides to run 3 sprints 3 times a week.  He runs 60 meters each sprint.  How many total meters does he run a week?” (answer: 540)</p></div>
+  <div class="reply-grid"><div><div class="reply-k">F16 (baseline), GSM8K #3: correct</div><pre class="reply">times a week**.
+
+First, calculate how many meters he runs in one session (3 sprints):
+
+$$
+3 \text{ sprints} \times 60 \text{ meters} = 180 \text{ meters per session}
+$$
+
+Now, multiply by the number of sessions per week (3 times):
+
+$$
+180 \text{ meters/session} \times 3 \text{ sessions} = 540 \text{ meters per week}
+$$
+
+#### 540</pre></div><div><div class="reply-k">Q2_K, same question: drops the “3 times a week”</div><pre class="reply">James runs 3 sprints each week.  
+Each sprint is 60 meters.  
+
+To find the total distance he runs each week, multiply the number of sprints by the distance of each sprint:
+
+$$
+3 \times 60 = 180
+$$
+
+So, James runs a total of 180 meters each week.
+
+#### 180 ####</pre></div><div><div class="reply-k">bnb-nf4: right number, broken format (fails strict)</div><pre class="reply">otal cost = $80,000 + $50,000 = **$130,000**
+
+---
+
+**Step 4: Calculate profit**
+
+Profit = Selling price (new value) - Total cost  
+= $200,000 - $130,000 = **$70,000**
+
+---
+
+#### ✅ Final Answer: $70,000
+
+#### &lt;number&gt;70000&lt;/number&gt;</pre></div><div><div class="reply-k">hqq3, GSM8K #0: still reasoning when it hits the 512-token cap</div><pre class="reply">eggs = 16  
+She eats 3 (breakfast)  
+She bakes muffins with 4 — so 4 eggs used in muffins.
+
+So, total used = 3 + 4 = 7  
+So, remaining = 16 - 7 = 9
+
+So, she has 9 eggs left to sell.
+
+Now, she sells the **remainder** at the farmers&#x27; market at **$2 per fresh duck egg**.
+
+So, value per egg = $2  
+So, total value = 9 × $2 = $18
+
+So</pre></div><div><div class="reply-k">hqq2, GSM8K #0: no language left</div><pre class="reply">Aig &amp; I&#x27;I A A&#x27;&amp;&amp;#A&#x27;A&#x27;@00&#x27;4 IY IS? &amp;&#x27;0S N] &amp; &amp; &amp; I &amp; &amp;00 &amp; &amp;&#x27;A99 &amp;&amp; (A.
+ &amp;&#x27;A Mesing &amp; &amp; &amp;SWINTROINT@0992000?@isSRA &amp; &amp;0 A &amp;09990 &amp; &amp;S &amp;I &amp; &amp;031 A &quot;92201 (01199920 &amp; I &amp;&lt;/Dog &amp; A &amp; &amp;3 &amp; &amp; A So Id,918,920 &quot;S2000&amp;#&amp;2 I&amp;#&amp; V9 &amp; I &amp; &amp; it &amp; for, &quot;S&amp; &lt;SPAG &amp;&amp;# &amp; &quot;M  &amp;</pre></div></div>
+  </section>
+
+  <section class="block" id="run-qa">
+  <div class="sec-head"><h2>The notebook's nine questions, answered</h2></div>
+  
+<ol class="qa">
+<li><b>Is 8-bit indistinguishable?</b> In quality, yes (KLD ≤ 0.009, flips within noise). In speed, no: bnb-int8 is 3.5× slower than FP16, while Q8_0 is 1.5× faster than F16.</li>
+<li><b>At 4-bit, what matters most?</b> The engine first (llama.cpp ≈ 6× the decode speed of bitsandbytes), then the code book (NF4 halves FP4's drift), then per-layer mixing and calibration (each about −30% KLD). Double quantization only saves memory.</li>
+<li><b>Does perplexity stay flat while KLD and GSM8K move?</b> Yes, down to 3-bit: perplexity is within 3% for every GGUF of 4 bits or more, while KLD varies 20× and up to 13 answers are lost.</li>
+<li><b>Does GSM8K drop before ARC?</b> For HQQ, yes. For 2-bit GGUF, no: ARC fell as much or more.</li>
+<li><b>Do some quants break the format first?</b> bitsandbytes 4-bit does (strict gap 6–10 points). llama.cpp quants do not (≤ 1.6).</li>
+<li><b>Where is the cliff for a 4B model?</b> Between 3 and 2 bits for calibrated GGUF (Q3_K_M-imat 87.2%, Q2_K-imat 80.0%). For uncalibrated HQQ it is already at 3-bit. The imatrix moves the cliff, and UD barely does.</li>
+<li><b>Does tok/s follow size?</b> Down to about 2.3 GB, yes. Below that, dequantization eats the gain, and HQQ with the PyTorch backend and bnb-int8 are smaller but much slower than FP16.</li>
+<li><b>Which use more memory than their bits suggest?</b> Every Transformers variant (+2.4–3.0 GB for batched KV and logits) and unsloth-dyn4 (16-bit blocks). FP8 on a T4 saves nothing at all.</li>
+<li><b>One variant for a 15 GB T4?</b> <b>Q4_K_M-imat or UD-Q4_K_XL in llama-server</b>: 2.5 GB, 59–70 tok/s single stream, GSM8K within 1–3 points of F16. If fidelity matters more than speed, Q8_0.</li>
+</ol>
+  </section>
+
+  <section class="block" id="run-caveats">
+  <div class="sec-head"><h2>Caveats</h2></div>
+  <div class="findings">
+    <div class="finding"><h4>250 questions is a small sample</h4><div><p>At 92% accuracy, one task's standard error is about ±1.7 points. Read differences under about 3 points as ties, and use KLD and the lost/gained counts to tell close variants apart.</p><div class="ev">binomial: √(0.92 × 0.08 / 250)</div></div></div>
+    <div class="finding"><h4>Perplexity and KLD are not comparable across tracks</h4><div><p>llama-perplexity scores only the second half of each 512-token chunk, so every token it scores has at least 256 tokens of context. Our Transformers code scores every token. That is why the same FP16 model shows 11.19 in one track and 14.43 in the other.</p><div class="ev">qlab/hf_backend.py · llama-perplexity --kl-divergence</div></div></div>
+    <div class="finding"><h4>HQQ ran on its default PyTorch backend</h4><div><p>No fused int4 kernels were used, so HQQ's 2–3 tok/s describes that backend, not the method. HQQ's speed comes from backends such as torchao or GemLite, which this T4 setup didn't use.</p><div class="ev">hf-hqq* / run.log</div></div></div>
+    <div class="finding"><h4>Two sessions</h4><div><p>HQQ needed a fix for Transformers 5, and Unsloth dyn4 needed its bf16 compute dtype forced to FP16, so they ran in a second session together with a fresh FP16 baseline. The FP16 decode speed differed by about 10% between the two sessions (14.8 vs 16.3 tok/s). That is the run-to-run noise in the Transformers speed numbers.</p><div class="ev">git log · results/hf-fp16</div></div></div>
+  </div>
+  </section>
+
+  <div class="panel-nav"><a class="pn prev" href="#findings"><span class="pn-k">Previous</span><span class="pn-t">← Findings</span></a><a class="pn next" href="#glossary"><span class="pn-k">Next</span><span class="pn-t">Glossary →</span></a></div>
 </div>
 <div class="panel" id="glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden>
   <div class="panel-head">
-    <div class="eyebrow">Step 6 of 7</div>
+    <div class="eyebrow">Step 7 of 8</div>
     <h2 class="panel-title">Glossary</h2>
     <p class="panel-lede">Every method, format, engine, metric and benchmark used in this guide. Filter by name, or jump to a group.</p>
   </div>
@@ -771,11 +961,11 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
   <div class="g-jump" id="g-jump"></div>
   <div id="g-body"></div>
 </section>
-  <div class="panel-nav"><a class="pn prev" href="#findings"><span class="pn-k">Previous</span><span class="pn-t">← Findings</span></a><a class="pn next" href="#sources"><span class="pn-k">Next</span><span class="pn-t">Sources →</span></a></div>
+  <div class="panel-nav"><a class="pn prev" href="#run"><span class="pn-k">Previous</span><span class="pn-t">← Our T4 run</span></a><a class="pn next" href="#sources"><span class="pn-k">Next</span><span class="pn-t">Sources →</span></a></div>
 </div>
 <div class="panel" id="sources" role="tabpanel" aria-labelledby="tab-sources" hidden>
   <div class="panel-head">
-    <div class="eyebrow">Step 7 of 7</div>
+    <div class="eyebrow">Step 8 of 8</div>
     <h2 class="panel-title">Sources and verification</h2>
     <p class="panel-lede">Where every number comes from and how it was checked.</p>
   </div>
@@ -1589,7 +1779,175 @@ td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
   renderGloss("");
   $("#g-search").addEventListener("input", e => renderGloss(e.target.value));
 
-  function drawAll() { qwenGsm(); qwenKld(); l2Pareto(); l3Bits(); gemmaChart(); engBars(); sphChart(); uctxChart(); }
+
+  /* ---------------- OUR T4 RUN ---------------- */
+  const RUN = [{"track":"gguf","variant":"F16","bpw":16.0,"size_gb":8.051,"peak_gpu_gb":9.495,"torch_peak_allocated_gb":null,"prefill_tps":2561.9,"prefill_tps_std":44.6,"ttft_ms":199.9,"decode_tps":30.7,"decode_tps_std":0.09,"ppl":11.193,"mean_kld":0.0,"p99_kld":null,"top1_agree":1.0,"gsm8k_strict":0.916,"gsm8k_flexible":0.928,"strict_gap":0.012,"arc":0.88,"lost_vs_base":0,"gained_vs_base":0,"gsm8k_tokens_mean":254.5,"gsm8k_hit_max_tokens":18,"gsm8k_throughput_tps":151.7,"gsm8k_latency_p50_s":11.731,"gsm8k_latency_p95_s":25.151,"arc_latency_p50_s":1.091,"server_ttft_ms_p50":146.596,"server_ttft_ms_p95":238.563,"server_decode_tps_mean":20.2372,"quant_s":null,"load_s":null,"time_make_s":0.0,"time_load_s":null,"time_bench_s":81.5,"time_tasks_s":458.4,"time_kld_s":13.7,"time_total_s":553.7},{"track":"gguf","variant":"Q8_0","bpw":8.51,"size_gb":4.28,"peak_gpu_gb":5.705,"torch_peak_allocated_gb":null,"prefill_tps":2041.6,"prefill_tps_std":19.8,"ttft_ms":250.8,"decode_tps":45.8,"decode_tps_std":0.08,"ppl":11.23091,"mean_kld":0.001978,"p99_kld":0.011148,"top1_agree":0.9741,"gsm8k_strict":0.912,"gsm8k_flexible":0.92,"strict_gap":0.008,"arc":0.876,"lost_vs_base":7,"gained_vs_base":5,"gsm8k_tokens_mean":252.044,"gsm8k_hit_max_tokens":15,"gsm8k_throughput_tps":147.1,"gsm8k_latency_p50_s":12.35,"gsm8k_latency_p95_s":26.893,"arc_latency_p50_s":0.879,"server_ttft_ms_p50":110.539,"server_ttft_ms_p95":194.069,"server_decode_tps_mean":19.0695,"quant_s":30.4,"load_s":null,"time_make_s":30.4,"time_load_s":null,"time_bench_s":12.7,"time_tasks_s":459.5,"time_kld_s":16.1,"time_total_s":518.9},{"track":"gguf","variant":"Q6_K","bpw":6.57,"size_gb":3.306,"peak_gpu_gb":4.732,"torch_peak_allocated_gb":null,"prefill_tps":1956.9,"prefill_tps_std":21.0,"ttft_ms":261.6,"decode_tps":53.9,"decode_tps_std":0.22,"ppl":11.150061,"mean_kld":0.007337,"p99_kld":0.046287,"top1_agree":0.9594,"gsm8k_strict":0.904,"gsm8k_flexible":0.912,"strict_gap":0.008,"arc":0.876,"lost_vs_base":8,"gained_vs_base":4,"gsm8k_tokens_mean":252.968,"gsm8k_hit_max_tokens":19,"gsm8k_throughput_tps":142.9,"gsm8k_latency_p50_s":12.988,"gsm8k_latency_p95_s":28.393,"arc_latency_p50_s":0.895,"server_ttft_ms_p50":110.77,"server_ttft_ms_p95":173.117,"server_decode_tps_mean":18.2957,"quant_s":162.2,"load_s":null,"time_make_s":162.2,"time_load_s":null,"time_bench_s":10.2,"time_tasks_s":474.2,"time_kld_s":15.0,"time_total_s":661.9},{"track":"gguf","variant":"Q5_K_M","bpw":5.74,"size_gb":2.89,"peak_gpu_gb":4.315,"torch_peak_allocated_gb":null,"prefill_tps":2038.0,"prefill_tps_std":23.1,"ttft_ms":251.2,"decode_tps":62.7,"decode_tps_std":0.39,"ppl":11.363816,"mean_kld":0.014224,"p99_kld":0.107284,"top1_agree":0.9486,"gsm8k_strict":0.916,"gsm8k_flexible":0.92,"strict_gap":0.004,"arc":0.86,"lost_vs_base":6,"gained_vs_base":4,"gsm8k_tokens_mean":251.664,"gsm8k_hit_max_tokens":13,"gsm8k_throughput_tps":150.9,"gsm8k_latency_p50_s":12.163,"gsm8k_latency_p95_s":25.997,"arc_latency_p50_s":0.84,"server_ttft_ms_p50":104.958,"server_ttft_ms_p95":212.082,"server_decode_tps_mean":19.4016,"quant_s":283.8,"load_s":null,"time_make_s":283.8,"time_load_s":null,"time_bench_s":9.1,"time_tasks_s":447.0,"time_kld_s":12.7,"time_total_s":752.7},{"track":"gguf","variant":"UD-Q4_K_XL","bpw":5.06,"size_gb":2.546,"peak_gpu_gb":3.975,"torch_peak_allocated_gb":null,"prefill_tps":1858.7,"prefill_tps_std":19.7,"ttft_ms":275.5,"decode_tps":58.7,"decode_tps_std":0.86,"ppl":11.471199,"mean_kld":0.027283,"p99_kld":0.246288,"top1_agree":0.9267,"gsm8k_strict":0.912,"gsm8k_flexible":0.916,"strict_gap":0.004,"arc":0.872,"lost_vs_base":8,"gained_vs_base":5,"gsm8k_tokens_mean":260.372,"gsm8k_hit_max_tokens":16,"gsm8k_throughput_tps":149.1,"gsm8k_latency_p50_s":12.754,"gsm8k_latency_p95_s":26.877,"arc_latency_p50_s":0.846,"server_ttft_ms_p50":101.378,"server_ttft_ms_p95":170.73,"server_decode_tps_mean":19.1238,"quant_s":null,"load_s":null,"time_make_s":0.0,"time_load_s":null,"time_bench_s":19.2,"time_tasks_s":466.5,"time_kld_s":12.5,"time_total_s":498.3},{"track":"gguf","variant":"Q4_K_M","bpw":4.96,"size_gb":2.497,"peak_gpu_gb":3.923,"torch_peak_allocated_gb":null,"prefill_tps":2089.0,"prefill_tps_std":26.2,"ttft_ms":245.1,"decode_tps":69.4,"decode_tps_std":0.28,"ppl":11.487605,"mean_kld":0.039917,"p99_kld":0.339422,"top1_agree":0.9118,"gsm8k_strict":0.884,"gsm8k_flexible":0.896,"strict_gap":0.012,"arc":0.872,"lost_vs_base":10,"gained_vs_base":2,"gsm8k_tokens_mean":267.812,"gsm8k_hit_max_tokens":23,"gsm8k_throughput_tps":154.5,"gsm8k_latency_p50_s":12.37,"gsm8k_latency_p95_s":26.565,"arc_latency_p50_s":0.826,"server_ttft_ms_p50":98.893,"server_ttft_ms_p95":155.263,"server_decode_tps_mean":19.9357,"quant_s":326.4,"load_s":null,"time_make_s":326.4,"time_load_s":null,"time_bench_s":8.4,"time_tasks_s":462.8,"time_kld_s":12.6,"time_total_s":810.4},{"track":"gguf","variant":"Q4_K_M-imat","bpw":4.96,"size_gb":2.497,"peak_gpu_gb":3.923,"torch_peak_allocated_gb":null,"prefill_tps":2094.9,"prefill_tps_std":22.1,"ttft_ms":244.4,"decode_tps":69.7,"decode_tps_std":0.16,"ppl":11.476458,"mean_kld":0.028481,"p99_kld":0.260236,"top1_agree":0.9253,"gsm8k_strict":0.892,"gsm8k_flexible":0.896,"strict_gap":0.004,"arc":0.876,"lost_vs_base":9,"gained_vs_base":1,"gsm8k_tokens_mean":259.836,"gsm8k_hit_max_tokens":20,"gsm8k_throughput_tps":155.5,"gsm8k_latency_p50_s":12.014,"gsm8k_latency_p95_s":25.4,"arc_latency_p50_s":0.795,"server_ttft_ms_p50":98.345,"server_ttft_ms_p95":158.685,"server_decode_tps_mean":20.0552,"quant_s":538.5,"load_s":null,"time_make_s":538.5,"time_load_s":null,"time_bench_s":8.4,"time_tasks_s":446.5,"time_kld_s":12.5,"time_total_s":1006.0},{"track":"gguf","variant":"IQ4_XS-imat","bpw":4.51,"size_gb":2.271,"peak_gpu_gb":3.694,"torch_peak_allocated_gb":null,"prefill_tps":2306.1,"prefill_tps_std":38.5,"ttft_ms":222.0,"decode_tps":76.4,"decode_tps_std":0.09,"ppl":11.396724,"mean_kld":0.035848,"p99_kld":0.342795,"top1_agree":0.9192,"gsm8k_strict":0.88,"gsm8k_flexible":0.888,"strict_gap":0.008,"arc":0.868,"lost_vs_base":13,"gained_vs_base":3,"gsm8k_tokens_mean":260.492,"gsm8k_hit_max_tokens":22,"gsm8k_throughput_tps":177.3,"gsm8k_latency_p50_s":10.56,"gsm8k_latency_p95_s":22.883,"arc_latency_p50_s":0.794,"server_ttft_ms_p50":87.533,"server_ttft_ms_p95":148.481,"server_decode_tps_mean":22.8399,"quant_s":889.8,"load_s":null,"time_make_s":889.8,"time_load_s":null,"time_bench_s":14.1,"time_tasks_s":394.7,"time_kld_s":14.2,"time_total_s":1312.9},{"track":"gguf","variant":"Q3_K_M-imat","bpw":4.13,"size_gb":2.076,"peak_gpu_gb":3.503,"torch_peak_allocated_gb":null,"prefill_tps":1936.8,"prefill_tps_std":25.9,"ttft_ms":264.4,"decode_tps":63.2,"decode_tps_std":0.04,"ppl":12.070148,"mean_kld":0.09151,"p99_kld":0.839156,"top1_agree":0.8628,"gsm8k_strict":0.876,"gsm8k_flexible":0.872,"strict_gap":-0.004,"arc":0.852,"lost_vs_base":17,"gained_vs_base":3,"gsm8k_tokens_mean":274.46,"gsm8k_hit_max_tokens":23,"gsm8k_throughput_tps":139.0,"gsm8k_latency_p50_s":14.583,"gsm8k_latency_p95_s":29.462,"arc_latency_p50_s":0.84,"server_ttft_ms_p50":112.157,"server_ttft_ms_p95":194.499,"server_decode_tps_mean":17.8592,"quant_s":343.7,"load_s":null,"time_make_s":343.7,"time_load_s":null,"time_bench_s":14.6,"time_tasks_s":523.9,"time_kld_s":13.5,"time_total_s":895.7},{"track":"gguf","variant":"UD-Q2_K_XL","bpw":3.37,"size_gb":1.696,"peak_gpu_gb":3.13,"torch_peak_allocated_gb":null,"prefill_tps":1435.3,"prefill_tps_std":13.1,"ttft_ms":356.7,"decode_tps":53.8,"decode_tps_std":0.38,"ppl":13.951694,"mean_kld":0.302249,"p99_kld":3.187535,"top1_agree":0.769,"gsm8k_strict":0.788,"gsm8k_flexible":0.792,"strict_gap":0.004,"arc":0.696,"lost_vs_base":37,"gained_vs_base":3,"gsm8k_tokens_mean":278.36,"gsm8k_hit_max_tokens":40,"gsm8k_throughput_tps":134.3,"gsm8k_latency_p50_s":14.166,"gsm8k_latency_p95_s":30.191,"arc_latency_p50_s":0.881,"server_ttft_ms_p50":120.576,"server_ttft_ms_p95":196.779,"server_decode_tps_mean":17.2515,"quant_s":null,"load_s":null,"time_make_s":0.0,"time_load_s":null,"time_bench_s":16.8,"time_tasks_s":549.3,"time_kld_s":14.0,"time_total_s":580.1},{"track":"gguf","variant":"Q2_K","bpw":3.32,"size_gb":1.669,"peak_gpu_gb":3.098,"torch_peak_allocated_gb":null,"prefill_tps":1516.8,"prefill_tps_std":19.7,"ttft_ms":337.6,"decode_tps":69.0,"decode_tps_std":0.26,"ppl":21.663424,"mean_kld":0.710594,"p99_kld":5.661675,"top1_agree":0.6514,"gsm8k_strict":0.54,"gsm8k_flexible":0.556,"strict_gap":0.016,"arc":0.504,"lost_vs_base":94,"gained_vs_base":1,"gsm8k_tokens_mean":357.876,"gsm8k_hit_max_tokens":106,"gsm8k_throughput_tps":134.5,"gsm8k_latency_p50_s":20.298,"gsm8k_latency_p95_s":30.932,"arc_latency_p50_s":0.902,"server_ttft_ms_p50":118.343,"server_ttft_ms_p95":258.491,"server_decode_tps_mean":17.2118,"quant_s":223.7,"load_s":null,"time_make_s":223.7,"time_load_s":null,"time_bench_s":8.6,"time_tasks_s":697.4,"time_kld_s":14.6,"time_total_s":944.3},{"track":"gguf","variant":"Q2_K-imat","bpw":3.32,"size_gb":1.669,"peak_gpu_gb":3.096,"torch_peak_allocated_gb":null,"prefill_tps":1526.4,"prefill_tps_std":7.6,"ttft_ms":335.4,"decode_tps":69.7,"decode_tps_std":0.21,"ppl":14.859511,"mean_kld":0.319508,"p99_kld":3.473636,"top1_agree":0.76,"gsm8k_strict":0.784,"gsm8k_flexible":0.8,"strict_gap":0.016,"arc":0.74,"lost_vs_base":34,"gained_vs_base":2,"gsm8k_tokens_mean":296.264,"gsm8k_hit_max_tokens":39,"gsm8k_throughput_tps":134.6,"gsm8k_latency_p50_s":15.553,"gsm8k_latency_p95_s":30.836,"arc_latency_p50_s":0.966,"server_ttft_ms_p50":118.467,"server_ttft_ms_p95":210.49,"server_decode_tps_mean":17.2729,"quant_s":498.0,"load_s":null,"time_make_s":498.0,"time_load_s":null,"time_bench_s":8.5,"time_tasks_s":584.2,"time_kld_s":17.5,"time_total_s":1108.4},{"track":"hf","variant":"fp16","bpw":16.0,"size_gb":8.045,"peak_gpu_gb":10.685,"torch_peak_allocated_gb":9.853,"prefill_tps":1307.1,"prefill_tps_std":15.6,"ttft_ms":391.7,"decode_tps":16.3,"decode_tps_std":0.13,"ppl":14.4301,"mean_kld":0.0,"p99_kld":null,"top1_agree":1.0,"gsm8k_strict":0.916,"gsm8k_flexible":0.924,"strict_gap":0.008,"arc":0.88,"lost_vs_base":0,"gained_vs_base":0,"gsm8k_tokens_mean":254.048,"gsm8k_hit_max_tokens":17,"gsm8k_throughput_tps":76.7,"gsm8k_latency_p50_s":56.261,"gsm8k_latency_p95_s":59.895,"arc_latency_p50_s":1.364,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":35.4,"time_make_s":null,"time_load_s":35.4,"time_bench_s":35.3,"time_tasks_s":848.9,"time_kld_s":14.5,"time_total_s":934.8},{"track":"hf","variant":"fp8","bpw":16.0,"size_gb":8.045,"peak_gpu_gb":10.471,"torch_peak_allocated_gb":9.859,"prefill_tps":1616.1,"prefill_tps_std":10.7,"ttft_ms":316.8,"decode_tps":15.1,"decode_tps_std":0.13,"ppl":14.4546,"mean_kld":0.00402,"p99_kld":0.0357,"top1_agree":0.9683,"gsm8k_strict":0.916,"gsm8k_flexible":0.92,"strict_gap":0.004,"arc":0.876,"lost_vs_base":5,"gained_vs_base":4,"gsm8k_tokens_mean":255.208,"gsm8k_hit_max_tokens":16,"gsm8k_throughput_tps":80.4,"gsm8k_latency_p50_s":55.738,"gsm8k_latency_p95_s":58.407,"arc_latency_p50_s":1.229,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":26.0,"time_make_s":null,"time_load_s":26.0,"time_bench_s":37.4,"time_tasks_s":813.3,"time_kld_s":19.3,"time_total_s":896.5},{"track":"hf","variant":"bnb-int8","bpw":8.77,"size_gb":4.412,"peak_gpu_gb":7.019,"torch_peak_allocated_gb":6.227,"prefill_tps":1213.0,"prefill_tps_std":10.9,"ttft_ms":422.1,"decode_tps":4.6,"decode_tps_std":0.17,"ppl":14.578,"mean_kld":0.00862,"p99_kld":0.0987,"top1_agree":0.958,"gsm8k_strict":0.908,"gsm8k_flexible":0.932,"strict_gap":0.024,"arc":0.888,"lost_vs_base":3,"gained_vs_base":5,"gsm8k_tokens_mean":252.632,"gsm8k_hit_max_tokens":15,"gsm8k_throughput_tps":31.0,"gsm8k_latency_p50_s":139.032,"gsm8k_latency_p95_s":144.317,"arc_latency_p50_s":2.009,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":34.4,"time_make_s":null,"time_load_s":34.4,"time_bench_s":115.3,"time_tasks_s":2070.6,"time_kld_s":22.2,"time_total_s":2243.2},{"track":"hf","variant":"unsloth-dyn4","bpw":6.95,"size_gb":3.497,"peak_gpu_gb":6.214,"torch_peak_allocated_gb":5.355,"prefill_tps":1248.4,"prefill_tps_std":16.4,"ttft_ms":410.1,"decode_tps":12.6,"decode_tps_std":0.32,"ppl":14.7051,"mean_kld":0.0492,"p99_kld":0.5272,"top1_agree":0.8949,"gsm8k_strict":0.84,"gsm8k_flexible":0.904,"strict_gap":0.064,"arc":0.836,"lost_vs_base":7,"gained_vs_base":2,"gsm8k_tokens_mean":255.98,"gsm8k_hit_max_tokens":21,"gsm8k_throughput_tps":73.2,"gsm8k_latency_p50_s":59.809,"gsm8k_latency_p95_s":63.887,"arc_latency_p50_s":1.459,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":23.3,"time_make_s":null,"time_load_s":23.3,"time_bench_s":44.5,"time_tasks_s":897.3,"time_kld_s":12.5,"time_total_s":978.2},{"track":"hf","variant":"hqq4","bpw":5.65,"size_gb":2.842,"peak_gpu_gb":5.566,"torch_peak_allocated_gb":4.65,"prefill_tps":788.9,"prefill_tps_std":2.9,"ttft_ms":649.0,"decode_tps":2.9,"decode_tps_std":0.0,"ppl":15.2918,"mean_kld":0.07549,"p99_kld":0.662,"top1_agree":0.8734,"gsm8k_strict":0.896,"gsm8k_flexible":0.912,"strict_gap":0.016,"arc":0.868,"lost_vs_base":6,"gained_vs_base":3,"gsm8k_tokens_mean":260.912,"gsm8k_hit_max_tokens":22,"gsm8k_throughput_tps":21.2,"gsm8k_latency_p50_s":207.559,"gsm8k_latency_p95_s":210.102,"arc_latency_p50_s":2.915,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":85.2,"time_make_s":null,"time_load_s":85.3,"time_bench_s":181.5,"time_tasks_s":3117.4,"time_kld_s":23.1,"time_total_s":3407.9},{"track":"hf","variant":"bnb-fp4","bpw":5.16,"size_gb":2.595,"peak_gpu_gb":5.608,"torch_peak_allocated_gb":4.666,"prefill_tps":1371.8,"prefill_tps_std":10.5,"ttft_ms":373.2,"decode_tps":11.4,"decode_tps_std":0.43,"ppl":16.2594,"mean_kld":0.13571,"p99_kld":1.2515,"top1_agree":0.8336,"gsm8k_strict":0.86,"gsm8k_flexible":0.884,"strict_gap":0.024,"arc":0.852,"lost_vs_base":14,"gained_vs_base":4,"gsm8k_tokens_mean":279.48,"gsm8k_hit_max_tokens":27,"gsm8k_throughput_tps":76.2,"gsm8k_latency_p50_s":61.226,"gsm8k_latency_p95_s":62.924,"arc_latency_p50_s":1.309,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":33.1,"time_make_s":null,"time_load_s":33.1,"time_bench_s":48.8,"time_tasks_s":938.3,"time_kld_s":21.3,"time_total_s":1042.1},{"track":"hf","variant":"bnb-nf4","bpw":5.16,"size_gb":2.595,"peak_gpu_gb":5.608,"torch_peak_allocated_gb":4.666,"prefill_tps":1394.8,"prefill_tps_std":8.6,"ttft_ms":367.1,"decode_tps":11.8,"decode_tps_std":0.13,"ppl":14.9823,"mean_kld":0.07131,"p99_kld":0.7103,"top1_agree":0.8755,"gsm8k_strict":0.808,"gsm8k_flexible":0.896,"strict_gap":0.088,"arc":0.856,"lost_vs_base":11,"gained_vs_base":4,"gsm8k_tokens_mean":260.448,"gsm8k_hit_max_tokens":24,"gsm8k_throughput_tps":70.1,"gsm8k_latency_p50_s":60.733,"gsm8k_latency_p95_s":63.149,"arc_latency_p50_s":1.322,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":31.4,"time_make_s":null,"time_load_s":31.4,"time_bench_s":46.6,"time_tasks_s":950.0,"time_kld_s":20.5,"time_total_s":1049.2},{"track":"hf","variant":"bnb-nf4-dq","bpw":5.16,"size_gb":2.595,"peak_gpu_gb":5.352,"torch_peak_allocated_gb":4.488,"prefill_tps":1383.5,"prefill_tps_std":9.0,"ttft_ms":370.1,"decode_tps":10.9,"decode_tps_std":0.42,"ppl":14.9616,"mean_kld":0.07152,"p99_kld":0.712,"top1_agree":0.8761,"gsm8k_strict":0.792,"gsm8k_flexible":0.888,"strict_gap":0.096,"arc":0.856,"lost_vs_base":13,"gained_vs_base":4,"gsm8k_tokens_mean":264.148,"gsm8k_hit_max_tokens":27,"gsm8k_throughput_tps":70.4,"gsm8k_latency_p50_s":61.401,"gsm8k_latency_p95_s":63.312,"arc_latency_p50_s":1.342,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":31.9,"time_make_s":null,"time_load_s":31.9,"time_bench_s":49.7,"time_tasks_s":959.5,"time_kld_s":21.1,"time_total_s":1062.9},{"track":"hf","variant":"hqq3","bpw":4.97,"size_gb":2.497,"peak_gpu_gb":5.32,"torch_peak_allocated_gb":4.305,"prefill_tps":635.4,"prefill_tps_std":3.2,"ttft_ms":805.8,"decode_tps":1.9,"decode_tps_std":0.0,"ppl":20.6574,"mean_kld":0.44293,"p99_kld":4.2284,"top1_agree":0.7093,"gsm8k_strict":0.484,"gsm8k_flexible":0.492,"strict_gap":0.008,"arc":0.732,"lost_vs_base":108,"gained_vs_base":0,"gsm8k_tokens_mean":411.964,"gsm8k_hit_max_tokens":136,"gsm8k_throughput_tps":21.4,"gsm8k_latency_p50_s":302.282,"gsm8k_latency_p95_s":303.803,"arc_latency_p50_s":3.729,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":72.2,"time_make_s":null,"time_load_s":72.2,"time_bench_s":277.7,"time_tasks_s":4876.7,"time_kld_s":20.2,"time_total_s":5247.4},{"track":"hf","variant":"hqq2","bpw":3.84,"size_gb":1.93,"peak_gpu_gb":4.704,"torch_peak_allocated_gb":3.738,"prefill_tps":766.6,"prefill_tps_std":4.3,"ttft_ms":667.8,"decode_tps":2.9,"decode_tps_std":0.0,"ppl":114382.5312,"mean_kld":9.54966,"p99_kld":20.4483,"top1_agree":0.0266,"gsm8k_strict":0.0,"gsm8k_flexible":0.004,"strict_gap":0.004,"arc":0.064,"lost_vs_base":230,"gained_vs_base":0,"gsm8k_tokens_mean":512.0,"gsm8k_hit_max_tokens":250,"gsm8k_throughput_tps":38.5,"gsm8k_latency_p50_s":209.24,"gsm8k_latency_p95_s":210.619,"arc_latency_p50_s":2.889,"server_ttft_ms_p50":null,"server_ttft_ms_p95":null,"server_decode_tps_mean":null,"quant_s":null,"load_s":56.8,"time_make_s":null,"time_load_s":56.8,"time_bench_s":182.7,"time_tasks_s":3374.0,"time_kld_s":15.5,"time_total_s":3629.6}];
+  const runBase = { gguf: RUN.find(r => r.variant === "F16"), hf: RUN.find(r => r.variant === "fp16") };
+  const isBase = r => r === runBase[r.track];
+  const runCol = r => css(r.track === "gguf" ? "--s2" : "--s1");
+  const runTip = r => `<b>${r.variant}</b> · ${r.track === "gguf" ? "llama.cpp" : "Transformers"}<br>${fmt(r.size_gb, 2)} GB · ${fmt(r.bpw, 2)} bpw · peak ${fmt(r.peak_gpu_gb, 2)} GB<br>`
+    + `GSM8K ${fmt(r.gsm8k_flexible * 100)}% (strict ${fmt(r.gsm8k_strict * 100)}%) · ARC ${fmt(r.arc * 100)}%<br>`
+    + `KLD ${isBase(r) ? "0" : fmt(r.mean_kld, 4)} · top-1 ${fmt(r.top1_agree * 100)}% · PPL ${fmt(r.ppl, 2)}<br>decode ${fmt(r.decode_tps)} tok/s · prefill ${fmt(r.prefill_tps, 0)} tok/s`;
+
+  // glance cards
+  {
+    const g = v => RUN.find(r => r.variant === v), b = runBase.gguf;
+    const card = (title, r, verdict) => ({ model: title, kind: `${r.variant} · ${r.track === "gguf" ? "llama.cpp" : "Transformers"}`,
+      rows: [["Size / peak", `${fmt(r.size_gb, 2)} / ${fmt(r.peak_gpu_gb, 2)} GB`], ["Decode", `${fmt(r.decode_tps)} tok/s · ${fmt(r.decode_tps / b.decode_tps, 1)}×`],
+             ["GSM8K / ARC", `${fmt(r.gsm8k_flexible * 100)}% / ${fmt(r.arc * 100)}%`], ["KLD · lost", `${fmt(r.mean_kld, 3)} · ${r.lost_vs_base}`]], v: verdict });
+    const cards = [
+      card("Closest to 16-bit", g("Q8_0"), "Half the memory and 1.5× the speed, and nothing on any task tells it apart from F16."),
+      card("Best 4-bit", g("UD-Q4_K_XL"), "Lowest 4-bit drift and best 4-bit GSM8K. Q4_K_M-imat is 19% faster for slightly more drift."),
+      card("Fastest", g("IQ4_XS-imat"), "2.5× F16's decode in 2.27 GB. Costs 4 GSM8K points: about bnb-nf4's accuracy at 6.5× its speed."),
+      card("Where it breaks", g("Q2_K"), "Plain 2-bit loses 94 answers. The same file size with an imatrix (Q2_K-imat) loses 34."),
+    ];
+    $("#run-glance").innerHTML = cards.map(c => `
+      <div><div><div class="g-model">${c.model}</div><div class="g-kind">${c.kind}</div></div>
+      <dl>${c.rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join("")}</dl>
+      <div class="verdict">${c.v}</div></div>`).join("");
+  }
+
+  // tables
+  {
+    const P = v => v == null ? "—" : fmt(v * 100) + "%";
+    const cell = (r, c, best) => {
+      const v = r[c.k];
+      const shown = c.f ? c.f(v, r) : fmt(v, c.d ?? 1);
+      return `<td class="num ${best && v === best ? "best" : ""}" ${c.heat ? `style="${heat(c.heat(r))}"` : ""}>${shown}</td>`;
+    };
+    const table = (sel, rows, cols) => {
+      const bestOf = c => {
+        if (!c.best) return null;
+        const vals = rows.filter(r => !isBase(r) && r[c.k] != null).map(r => r[c.k]);
+        return vals.length ? (c.best === "min" ? Math.min(...vals) : Math.max(...vals)) : null;
+      };
+      const bests = cols.map(bestOf);
+      let h = `<thead><tr><th>Variant</th>${cols.map(c => `<th class="num">${c.h}</th>`).join("")}</tr></thead><tbody>`;
+      rows.forEach(r => { h += `<tr class="${isBase(r) ? "ref" : ""}"><td>${r.variant}</td>${cols.map((c, i) => cell(r, c, bests[i])).join("")}</tr>`; });
+      $(sel).innerHTML = h + "</tbody>";
+    };
+    const kld = (v, r) => isBase(r) ? "0" : fmt(v, 4);
+    const ret = r => pct(r.gsm8k_flexible, runBase[r.track].gsm8k_flexible);
+    const quality = [
+      { h: "Size<br>GB", k: "size_gb", d: 2, best: "min" }, { h: "Bits /<br>weight", k: "bpw", d: 2 }, { h: "Peak<br>GPU GB", k: "peak_gpu_gb", d: 2, best: "min" },
+      { h: "Prefill<br>tok/s", k: "prefill_tps", d: 0, best: "max" }, { h: "TTFT<br>ms", k: "ttft_ms", d: 0, best: "min" }, { h: "Decode<br>tok/s", k: "decode_tps", d: 1, best: "max" },
+      { h: "PPL", k: "ppl", f: v => v > 1000 ? v.toExponential(1) : fmt(v, 2) }, { h: "Mean<br>KLD", k: "mean_kld", f: kld, best: "min" }, { h: "p99<br>KLD", k: "p99_kld", f: (v, r) => isBase(r) ? "—" : fmt(v, 3) },
+      { h: "Top-1<br>agree", k: "top1_agree", f: P }, { h: "GSM8K<br>strict", k: "gsm8k_strict", f: P }, { h: "GSM8K<br>flexible", k: "gsm8k_flexible", f: P, best: "max" },
+      { h: "Retained", k: "gsm8k_flexible", f: (v, r) => fmt(ret(r)) + "%", heat: ret }, { h: "ARC", k: "arc", f: P, best: "max" },
+      { h: "Lost", k: "lost_vs_base", d: 0, best: "min" }, { h: "Gained", k: "gained_vs_base", d: 0 },
+    ];
+    table("#t-run-gguf", RUN.filter(r => r.track === "gguf"), quality);
+    table("#t-run-hf", RUN.filter(r => r.track === "hf"), [...quality.slice(0, 3), { h: "Torch<br>alloc GB", k: "torch_peak_allocated_gb", d: 2 }, ...quality.slice(3)]);
+    const serveRows = [...RUN].sort((a, b) => (a.track > b.track ? 1 : -1));
+    table("#t-run-serve", serveRows, [
+      { h: "GSM8K<br>tok/s", k: "gsm8k_throughput_tps", d: 1, best: "max" }, { h: "Tokens /<br>answer", k: "gsm8k_tokens_mean", d: 0 }, { h: "Hit 512<br>cap", k: "gsm8k_hit_max_tokens", d: 0 },
+      { h: "GSM8K<br>p50 s", k: "gsm8k_latency_p50_s", d: 1, best: "min" }, { h: "GSM8K<br>p95 s", k: "gsm8k_latency_p95_s", d: 1 }, { h: "ARC<br>p50 s", k: "arc_latency_p50_s", d: 2 },
+      { h: "Server<br>TTFT p50 ms", k: "server_ttft_ms_p50", d: 0 }, { h: "Server<br>TTFT p95 ms", k: "server_ttft_ms_p95", d: 0 }, { h: "Per-stream<br>decode tok/s", k: "server_decode_tps_mean", d: 1 },
+      { h: "Strict<br>gap pts", k: "strict_gap", f: v => fmt(v * 100) },
+    ]);
+    table("#t-run-time", serveRows, [
+      { h: "Make /<br>quantize", k: "quant_s", d: 0 }, { h: "Load", k: "load_s", d: 0 }, { h: "Speed<br>test", k: "time_bench_s", d: 0 },
+      { h: "500<br>questions", k: "time_tasks_s", d: 0 }, { h: "KLD", k: "time_kld_s", d: 0 }, { h: "Total", k: "time_total_s", d: 0 },
+    ]);
+  }
+
+  // generic scatter for the run charts
+  function runScatter(sel, cfg) {
+    const host = $(sel); const W = Math.max(300, host.clientWidth); const narrow = W < 480;
+    const H = 300, m = { t: 14, r: 18, b: 42, l: 54 };
+    const { g, iw, ih } = frame(host, W, H, m);
+    const tx = cfg.xlog ? Math.log10 : v => v, ty = cfg.ylog ? Math.log10 : v => v;
+    const clamp = (v, [a, b]) => Math.max(a, Math.min(b, v));
+    const x = v => ((tx(clamp(v, cfg.x)) - tx(cfg.x[0])) / (tx(cfg.x[1]) - tx(cfg.x[0]))) * iw;
+    const y = v => ih - ((ty(clamp(v, cfg.y)) - ty(cfg.y[0])) / (ty(cfg.y[1]) - ty(cfg.y[0]))) * ih;
+    cfg.yt.forEach(t => { el("line", { x1: 0, x2: iw, y1: y(t), y2: y(t), class: "grid" }, g); txt(g, -8, y(t) + 4, cfg.yf ? cfg.yf(t) : String(t), { "text-anchor": "end" }); });
+    cfg.xt.forEach(t => txt(g, x(t), ih + 18, String(t), { "text-anchor": "middle" }));
+    el("line", { x1: 0, x2: iw, y1: ih, y2: ih, class: "axis" }, g);
+    txt(g, iw / 2, ih + 35, cfg.xlabel, { "text-anchor": "middle" });
+    if (cfg.extra) cfg.extra(g, x, y, iw, ih);
+    RUN.filter(r => cfg.gy(r) != null && (!cfg.keep || cfg.keep(r))).forEach(r => {
+      const cx = x(cfg.gx(r)), cy = y(cfg.gy(r));
+      const c = el("circle", { cx, cy, r: 5, fill: runCol(r), stroke: css("--surface"), "stroke-width": 2 }, g);
+      const lab = cfg.labels && cfg.labels[r.variant];
+      if (lab && !narrow) txt(g, cx + lab[0], cy + lab[1], r.variant, { "text-anchor": lab[2] || "start", class: "lbl" });
+      const hit = el("circle", { cx, cy, r: 12, fill: "transparent" }, g);
+      hit.addEventListener("mousemove", e => { c.setAttribute("r", 7); showTip(e, runTip(r)); });
+      hit.addEventListener("mouseleave", () => { c.setAttribute("r", 5); hideTip(); });
+    });
+  }
+  function runAcc() {
+    runScatter("#c-run-acc", {
+      x: [3, 18], xlog: true, xt: [3, 4, 5, 6, 8, 12, 16], xlabel: "bits per weight", y: [40, 100], yt: [40, 50, 60, 70, 80, 90, 100], yf: t => t + "%",
+      gx: r => r.bpw, gy: r => r.gsm8k_flexible * 100,
+      labels: { "Q2_K": [8, 4], "Q2_K-imat": [-8, -8, "end"], "hqq3": [8, 4], "bnb-int8": [8, -8], "UD-Q2_K_XL": [8, 14], "fp16": [-8, -8, "end"] },
+      extra: (g, x, y, iw) => {
+        [runBase.gguf, runBase.hf].forEach(b => el("line", { x1: 0, x2: iw, y1: y(b.gsm8k_flexible * 100), y2: y(b.gsm8k_flexible * 100), stroke: css("--ink-3"), "stroke-width": 1.2, "stroke-dasharray": "4 3" }, g));
+        const h2 = RUN.find(r => r.variant === "hqq2");
+        if (h2) txt(g, x(h2.bpw) + 8, y(40) - 8, "hqq2: 0.4% ↓", { class: "lbl" });
+      },
+    });
+  }
+  function runKld() {
+    runScatter("#c-run-kld", {
+      x: [1.5, 9], xlog: true, xt: [2, 3, 4, 6, 8], xlabel: "size, GB", y: [0.001, 12], ylog: true, yt: [0.001, 0.01, 0.1, 1, 10],
+      gx: r => r.size_gb, gy: r => (isBase(r) ? null : r.mean_kld),
+      labels: { "Q8_0": [8, 4], "Q6_K": [8, 4], "UD-Q4_K_XL": [-8, 16, "end"], "Q2_K": [8, 4], "Q2_K-imat": [-8, 16, "end"], "hqq2": [8, 4], "hqq3": [8, 4], "bnb-fp4": [8, 4], "fp8": [-8, -8, "end"], "bnb-int8": [8, 4] },
+    });
+  }
+  function runSpeed() {
+    runScatter("#c-run-speed", {
+      x: [1.5, 9], xlog: true, xt: [2, 3, 4, 6, 8], xlabel: "size, GB", y: [0, 100], yt: [0, 20, 40, 60, 80, 100],
+      gx: r => r.size_gb, gy: r => r.decode_tps,
+      labels: { "F16": [-8, -8, "end"], "Q8_0": [8, -4], "IQ4_XS-imat": [-8, -8, "end"], "UD-Q2_K_XL": [-8, 14, "end"], "fp16": [-8, 14, "end"], "bnb-int8": [8, 4], "hqq4": [8, 4], "unsloth-dyn4": [8, -6] },
+      extra: (g, x, y) => {
+        const pts = []; for (let gb = 3.2; gb <= 9.001; gb += 0.1) pts.push([x(gb), y(320 / gb)]);
+        el("path", { d: pts.map((p, i) => (i ? "L" : "M") + p[0] + "," + p[1]).join(""), fill: "none", stroke: css("--ink-3"), "stroke-width": 1.4, "stroke-dasharray": "4 3" }, g);
+        txt(g, x(5.2), y(320 / 5.2) - 8, "320 GB/s ÷ size", { class: "lbl" });
+      },
+    });
+  }
+  function runFlips() {
+    const host = $("#c-run-flips"); const W = Math.max(300, host.clientWidth);
+    const rows = RUN.filter(r => !isBase(r)).sort((a, b) => a.lost_vs_base - b.lost_vs_base);
+    const m = { t: 8, r: 50, b: 26, l: 96 }, rowH = 19, H = m.t + m.b + rows.length * rowH;
+    const { g, iw } = frame(host, W, H, m);
+    const cap = 120, gmax = 10, zero = iw * cap / (cap + gmax), unit = zero / cap;
+    [0, 30, 60, 90, 120].forEach(t => { el("line", { x1: zero - t * unit, x2: zero - t * unit, y1: 0, y2: rows.length * rowH, class: "grid" }, g); txt(g, zero - t * unit, rows.length * rowH + 16, t, { "text-anchor": "middle" }); });
+    txt(g, zero + 5 * unit, rows.length * rowH + 16, "5", { "text-anchor": "middle" });
+    rows.forEach((r, i) => {
+      const y0 = i * rowH + 3, bh = rowH - 6;
+      txt(g, -8, y0 + bh / 2 + 4, r.variant, { "text-anchor": "end", class: "lbl", style: `fill:${runCol(r)}` });
+      const L = Math.min(r.lost_vs_base, cap);
+      el("rect", { x: zero - L * unit, y: y0, width: Math.max(1, L * unit), height: bh, rx: 2, fill: css("--crit") }, g);
+      el("rect", { x: zero, y: y0, width: Math.max(1, r.gained_vs_base * unit), height: bh, rx: 2, fill: css("--good") }, g);
+      txt(g, zero + r.gained_vs_base * unit + 4, y0 + bh / 2 + 4, `−${r.lost_vs_base} / +${r.gained_vs_base}`, { class: "lbl" });
+      const hit = el("rect", { x: -m.l, y: i * rowH, width: iw + m.l + m.r, height: rowH, fill: "transparent" }, g);
+      hit.addEventListener("mousemove", e => showTip(e, `${runTip(r)}<br>GSM8K vs baseline: ${r.lost_vs_base} lost, ${r.gained_vs_base} gained`));
+      hit.addEventListener("mouseleave", hideTip);
+    });
+    el("line", { x1: zero, x2: zero, y1: 0, y2: rows.length * rowH, class: "axis" }, g);
+  }
+  function runMem() {
+    const host = $("#c-run-mem"); const W = Math.max(300, host.clientWidth);
+    const rows = [...RUN].sort((a, b) => b.peak_gpu_gb - a.peak_gpu_gb);
+    const m = { t: 8, r: 70, b: 26, l: 96 }, rowH = 19, H = m.t + m.b + rows.length * rowH;
+    const { g, iw } = frame(host, W, H, m);
+    const hi = 16, x = v => (v / hi) * iw;
+    [0, 2, 4, 6, 8, 10, 12, 14, 16].forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 0, y2: rows.length * rowH, class: "grid" }, g); txt(g, x(t), rows.length * rowH + 16, t, { "text-anchor": "middle" }); });
+    rows.forEach((r, i) => {
+      const y0 = i * rowH + 3, bh = rowH - 6, over = Math.max(0, r.peak_gpu_gb - r.size_gb);
+      txt(g, -8, y0 + bh / 2 + 4, r.variant, { "text-anchor": "end", class: "lbl", style: `fill:${runCol(r)}` });
+      el("rect", { x: 0, y: y0, width: x(r.size_gb), height: bh, rx: 2, fill: runCol(r) }, g);
+      el("rect", { x: x(r.size_gb), y: y0, width: x(over), height: bh, rx: 2, fill: css("--rule-strong") }, g);
+      txt(g, x(r.peak_gpu_gb) + 5, y0 + bh / 2 + 4, `${fmt(r.peak_gpu_gb, 2)} GB`, { class: "lbl" });
+      const hit = el("rect", { x: -m.l, y: i * rowH, width: iw + m.l + m.r, height: rowH, fill: "transparent" }, g);
+      hit.addEventListener("mousemove", e => showTip(e, `<b>${r.variant}</b><br>weights ${fmt(r.size_gb, 2)} GB + other ${fmt(over, 2)} GB = peak ${fmt(r.peak_gpu_gb, 2)} GB`));
+      hit.addEventListener("mouseleave", hideTip);
+    });
+    el("line", { x1: x(15.36), x2: x(15.36), y1: -4, y2: rows.length * rowH, stroke: css("--ink-2"), "stroke-width": 1.5, "stroke-dasharray": "4 3" }, g);
+  }
+
+  function drawAll() { qwenGsm(); qwenKld(); l2Pareto(); l3Bits(); gemmaChart(); engBars(); sphChart(); uctxChart(); runAcc(); runKld(); runSpeed(); runFlips(); runMem(); }
   drawAll();
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
   // redraw on theme change so SVG colors read from tokens

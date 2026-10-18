@@ -1,0 +1,34 @@
+  12:52:16  [1/4] load (+ quantize on load)
+    loading Qwen/Qwen3-4B-Instruct-2507 + quantizing with hqq (4-bit)
+    loaded in 85.2s, weights 2.842 GB
+  12:53:41  [2/4] speed: prefill / decode / TTFT
+    speed test: prefill 512 tokens, decode 128, median of 3
+    788.9 tok/s prefill, 2.9 tok/s decode, TTFT 649.0 ms
+  12:56:43  [3/4] tasks: GSM8K + ARC, 250 questions each
+    GSM8K  16/250    6%  0:03:27 elapsed  ~0:50:35 left  23 tok/s at batch 16
+    GSM8K  32/250   13%  0:05:59 elapsed  ~0:40:46 left  24 tok/s at batch 16
+    GSM8K  48/250   19%  0:09:28 elapsed  ~0:39:54 left  23 tok/s at batch 16
+    GSM8K  64/250   26%  0:12:56 elapsed  ~0:37:35 left  22 tok/s at batch 16
+    GSM8K  80/250   32%  0:15:20 elapsed  ~0:32:35 left  23 tok/s at batch 16
+    GSM8K  96/250   38%  0:18:46 elapsed  ~0:30:06 left  22 tok/s at batch 16
+    GSM8K  112/250   45%  0:21:27 elapsed  ~0:26:26 left  23 tok/s at batch 16
+    GSM8K  128/250   51%  0:24:55 elapsed  ~0:23:45 left  22 tok/s at batch 16
+    GSM8K  144/250   58%  0:27:36 elapsed  ~0:20:19 left  22 tok/s at batch 16
+    GSM8K  160/250   64%  0:31:06 elapsed  ~0:17:30 left  22 tok/s at batch 16
+    GSM8K  176/250   70%  0:34:01 elapsed  ~0:14:18 left  22 tok/s at batch 16
+    GSM8K  192/250   77%  0:37:31 elapsed  ~0:11:20 left  22 tok/s at batch 16
+    GSM8K  208/250   83%  0:41:00 elapsed  ~0:08:16 left  22 tok/s at batch 16
+    GSM8K  224/250   90%  0:44:28 elapsed  ~0:05:09 left  22 tok/s at batch 16
+    GSM8K  240/250   96%  0:47:56 elapsed  ~0:01:59 left  22 tok/s at batch 16
+    GSM8K  250/250  100%  0:51:11 elapsed  21 tok/s at batch 16
+    ARC  16/250    6%  0:00:02 elapsed  ~0:00:43 left  27 tok/s at batch 16
+    ARC  112/250   45%  0:00:20 elapsed  ~0:00:25 left  27 tok/s at batch 16
+    ARC  208/250   83%  0:00:37 elapsed  ~0:00:07 left  27 tok/s at batch 16
+    ARC  250/250  100%  0:00:46 elapsed  27 tok/s at batch 16
+  13:48:40  [4/4] drift vs baseline: KL divergence on wikitext-2
+    KLD chunks  1/20    5%  0:00:02 elapsed  ~0:00:44 left  mean KLD so far 0.0678
+    KLD chunks  15/20   75%  0:00:18 elapsed  ~0:00:06 left  mean KLD so far 0.0740
+    KLD chunks  20/20  100%  0:00:23 elapsed  mean KLD so far 0.0755
+  RESULT  GSM8K 0.896/0.912  ARC 0.868  KLD 0.07549  PPL 15.2918
+          2.842 GB weights, peak 5.566 GB  |  decode 2.9 tok/s, TTFT 649.0 ms, GSM8K p50 latency 207.559 s
+          time: load 85.3s, bench 181.5s, tasks 3117.4s, kld 23.1s, total 3407.9s

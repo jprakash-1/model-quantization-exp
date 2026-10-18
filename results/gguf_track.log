@@ -772,3 +772,43 @@ quant source: Qwen3-4B-Instruct-2507-F16.gguf | baseline: Qwen3-4B-Instruct-2507
 
 === gguf track finished in 2:40:44 ===
 TRACK DONE
+llama.cpp already built
+downloading Qwen3-4B-Instruct-2507-F16.gguf
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+downloading imatrix_unsloth.gguf_file
+quant source: Qwen3-4B-Instruct-2507-F16.gguf | baseline: Qwen3-4B-Instruct-2507-F16.gguf
+[skip] gguf-F16 (done)
+[skip] gguf-Q8_0 (done)
+[skip] gguf-Q6_K (done)
+[skip] gguf-Q5_K_M (done)
+[skip] gguf-Q4_K_M (done)
+[skip] gguf-Q4_K_M-imat (done)
+[skip] gguf-UD-Q4_K_XL (done)
+[skip] gguf-IQ4_XS-imat (done)
+[skip] gguf-Q3_K_M-imat (done)
+[skip] gguf-Q2_K (done)
+[skip] gguf-Q2_K-imat (done)
+[skip] gguf-UD-Q2_K_XL (done)
+
+=== gguf track finished in 0:00:00 ===
+TRACK DONE
+llama.cpp already built
+downloading Qwen3-4B-Instruct-2507-F16.gguf
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+downloading imatrix_unsloth.gguf_file
+quant source: Qwen3-4B-Instruct-2507-F16.gguf | baseline: Qwen3-4B-Instruct-2507-F16.gguf
+[skip] gguf-F16 (done)
+[skip] gguf-Q8_0 (done)
+[skip] gguf-Q6_K (done)
+[skip] gguf-Q5_K_M (done)
+[skip] gguf-Q4_K_M (done)
+[skip] gguf-Q4_K_M-imat (done)
+[skip] gguf-UD-Q4_K_XL (done)
+[skip] gguf-IQ4_XS-imat (done)
+[skip] gguf-Q3_K_M-imat (done)
+[skip] gguf-Q2_K (done)
+[skip] gguf-Q2_K-imat (done)
+[skip] gguf-UD-Q2_K_XL (done)
+
+=== gguf track finished in 0:00:00 ===
+TRACK DONE
