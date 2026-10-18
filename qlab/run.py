@@ -9,10 +9,16 @@ From the notebook: run.run_all("hf", [...]). As a background job on the second G
 import argparse
 import json
 import shutil
+import time
 import traceback
 
 from qlab import config, tasks
 from qlab.gpu import PeakGpuMemory
+from qlab.progress import hms
+
+
+def step(i, n, what):
+    print(f"  {time.strftime('%H:%M:%S')}  [{i}/{n}] {what}", flush=True)
 
 
 def out_dir(track, variant):
@@ -34,11 +40,17 @@ def run_hf(variant):
     m = None
     try:
         with PeakGpuMemory() as mem:  # peak = weights + batched generation, as when serving
+            step(1, 4, "load (+ quantize on load)")
             m = hf.HFModel(variant)
             metrics = {"track": "hf", "variant": variant, "repo": m.repo, "load_s": m.load_s,
-                       "size_gb": m.weights_gb, "n_params": m.n_params, **m.bench()}
+                       "size_gb": m.weights_gb, "n_params": m.n_params}
+            step(2, 4, "speed: prefill / decode / TTFT")
+            metrics |= m.bench()
+            print(f"    {metrics['prefill_tps']} tok/s prefill, {metrics['decode_tps']} tok/s decode, TTFT {metrics['ttft_ms']} ms")
+            step(3, 4, f"tasks: GSM8K + ARC, {config.N_QUESTIONS} questions each")
             evals = tasks.run(m.generate)
         # KLD after the sampler stops: its full-vocab log-prob buffers are not model memory
+        step(4, 4, "drift vs baseline: KL divergence on wikitext-2")
         metrics |= hf.save_reference(m) if variant == hf.BASELINE else hf.compare_to_reference(m)
     finally:
         if m:
@@ -48,12 +60,19 @@ def run_hf(variant):
 
 def run_gguf(variant, out, keep=False):
     from qlab import gguf_backend as gg
+    step(1, 4, "make the GGUF (quantize, download, or baseline)")
     quant_s = gg.make(variant, out)
     model = gg.path(variant)
     metrics = {"track": "gguf", "variant": variant, "quant_s": quant_s,
                "size_gb": round(model.stat().st_size / 1e9, 3),
-               "n_params": gg.path(gg.BASELINE).stat().st_size // 2,  # F16 = 2 bytes per weight
-               **gg.bench(model), **gg.kld(model, variant, out)}
+               "n_params": gg.path(gg.BASELINE).stat().st_size // 2}  # F16 = 2 bytes per weight
+    print(f"    {model.name}: {metrics['size_gb']} GB" + (f", quantized in {quant_s}s" if quant_s else ""))
+    step(2, 4, "speed: llama-bench pp512 / tg128")
+    metrics |= gg.bench(model)
+    print(f"    {metrics['prefill_tps']} tok/s prefill, {metrics['decode_tps']} tok/s decode, TTFT {metrics['ttft_ms']} ms")
+    step(3, 4, "drift vs baseline: llama-perplexity KL divergence")
+    metrics |= gg.kld(model, variant, out)
+    step(4, 4, f"tasks via llama-server: GSM8K + ARC, {config.N_QUESTIONS} questions each")
     with PeakGpuMemory() as mem:
         server = gg.Server(model, out)
         try:
@@ -69,7 +88,6 @@ def run(track, variant, force=False):
     out = out_dir(track, variant)
     if (out / "metrics.json").exists() and not force:
         return print(f"[skip] {track}-{variant} (done)")
-    print(f"[run] {track}-{variant}")
     try:
         metrics, evals = run_hf(variant) if track == "hf" else run_gguf(variant, out)
         save(out, metrics, evals)
@@ -80,8 +98,19 @@ def run(track, variant, force=False):
 
 
 def run_all(track, variants, force=False):
-    for v in variants:
+    start, ran = time.time(), 0
+    for i, v in enumerate(variants, 1):
+        done = (out_dir(track, v) / "metrics.json").exists() and not force
+        left = len(variants) - i + 1
+        eta = f", ~{hms((time.time() - start) / ran * left)} left" if ran else ""
+        if not done:
+            print(f"\n=== {track} {i}/{len(variants)}: {v}  ({hms(time.time() - start)} into the track{eta}) ===", flush=True)
+        t0 = time.time()
         run(track, v, force)
+        if not done:
+            ran += 1
+            print(f"  {track}-{v} took {hms(time.time() - t0)}", flush=True)
+    print(f"\n=== {track} track finished in {hms(time.time() - start)} ===", flush=True)
 
 
 def cleanup():

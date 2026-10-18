@@ -1,6 +1,6 @@
 """GSM8K + ARC-Challenge: prompts, scoring, and one runner that works with any backend.
 
-A backend only has to provide `generate(list_of_chats, max_tokens) -> list of (text, n_tokens)`.
+A backend only has to provide `generate(list_of_chats, max_tokens, label) -> list of (text, n_tokens)`.
 Decoding is greedy with thinking mode off, identical for every variant.
 """
 import re
@@ -50,14 +50,14 @@ def run(generate, n=None):
     gsm_rows, arc_rows = load_jsonl("gsm8k.jsonl", n), load_jsonl("arc.jsonl", n)
 
     t0 = time.perf_counter()
-    gsm_out = generate([chat(GSM_SYSTEM, r["question"]) for r in gsm_rows], max_tokens=512)
+    gsm_out = generate([chat(GSM_SYSTEM, r["question"]) for r in gsm_rows], max_tokens=512, label="GSM8K")
     gsm_s = time.perf_counter() - t0
 
     arc_prompts = [
         chat(ARC_SYSTEM, r["question"] + "\n\n" + "\n".join(f"{k}. {v}" for k, v in r["choices"].items()) + "\n\nAnswer:")
         for r in arc_rows
     ]
-    arc_out = generate(arc_prompts, max_tokens=5)
+    arc_out = generate(arc_prompts, max_tokens=5, label="ARC")
 
     gsm = [{"i": i, **score_gsm8k(clean(t), r["answer"]), "tokens": k, "reply": clean(t)}
            for i, (r, (t, k)) in enumerate(zip(gsm_rows, gsm_out))]

@@ -10,12 +10,13 @@ import re
 import shutil
 import subprocess
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from huggingface_hub import hf_hub_download, list_repo_files
 from openai import OpenAI
 
 from qlab import config
+from qlab.progress import Progress
 
 BASELINE = "F16"  # T4 has no BF16, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
 PORT = 8080
@@ -38,6 +39,43 @@ def sh(cmd, log=None):
     if r.returncode:
         raise RuntimeError(f"{cmd} failed:\n{(r.stdout + r.stderr)[-3000:]}")
     return r.stdout + r.stderr
+
+
+def stream(cmd, log, bar, parse):
+    """Like sh(), but reads the output as it arrives: `parse(recent_text)` returns a count that moves `bar`."""
+    log.parent.mkdir(parents=True, exist_ok=True)
+    out = ""
+    with open(log, "w") as f:
+        p = subprocess.Popen(cmd, shell=isinstance(cmd, str), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for chunk in iter(lambda: p.stdout.read1(65536), b""):
+            text = chunk.decode(errors="replace")
+            out += text
+            f.write(text)
+            n = parse(out[-4000:])
+            if n is not None:
+                bar.set(n)
+        p.wait()
+    if p.returncode:
+        raise RuntimeError(f"{cmd} failed:\n{out[-3000:]}")
+    bar.done()
+    return out
+
+
+def last_int(pattern, text):
+    found = re.findall(pattern, text)
+    return int(found[-1]) if found else None
+
+
+def quant_pct(text):
+    """llama-quantize prints `[ 123/ 398] blk.12.attn_q.weight ...` per tensor."""
+    m = re.findall(r"\[\s*(\d+)/\s*(\d+)\]", text)
+    return 100 * int(m[-1][0]) // int(m[-1][1]) if m else None
+
+
+def ppl_chunks(text):
+    """llama-perplexity: `[7]6.12,` per chunk (baseline run), or a table row `   7   6.12 ...` (KLD run)."""
+    found = re.findall(r"\[(\d+)\]\d", text) + re.findall(r"(?m)^\s*(\d+)\s+\d+\.\d+", text)
+    return min(max(map(int, found)), config.KLD_CHUNKS) if found else None
 
 
 def cuda_driver_lib():
@@ -64,11 +102,13 @@ def build():
     config.WORK.mkdir(parents=True, exist_ok=True)
     if not (llama_dir() / ".git").exists():
         sh(f"git clone --depth 1 https://github.com/ggml-org/llama.cpp {llama_dir()}")
-    shutil.rmtree(llama_dir() / "build", ignore_errors=True)  # no stale CMake cache from a failed attempt
+    # -D values override a stale CMake cache, and keeping build/ lets an interrupted compile resume where it stopped
     sh(f"cmake -S {llama_dir()} -B {llama_dir()}/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES={arch} "
        f"-DCUDA_cuda_driver_LIBRARY={cuda_driver_lib()} -DLLAMA_CURL=OFF -DGGML_CCACHE=OFF -DCMAKE_BUILD_TYPE=Release")
-    sh(f"cmake --build {llama_dir()}/build -j {os.cpu_count()} --target llama-quantize llama-bench llama-perplexity llama-server")
-    print(sh(f"{tool('llama-server')} --version").strip().splitlines()[-1])
+    print("  cmake configure done; compiling (CUDA kernels are most of the time)", flush=True)
+    stream(f"cmake --build {llama_dir()}/build -j {os.cpu_count()} --target llama-quantize llama-bench llama-perplexity llama-server",
+           config.WORK / "llama-build.log", Progress(100, "build %", every=20), lambda t: last_int(r"\[\s*(\d+)%\]", t))
+    print("  built:", sh(f"{tool('llama-server')} --version").strip().splitlines()[-1])
 
 
 def gguf_dir():
@@ -95,7 +135,8 @@ def prepare(variants=()):
         print("downloading", f, flush=True)
         hf_hub_download(config.GGUF_REPO, f, local_dir=gguf_dir())
     if not path(BASELINE).exists():
-        sh([tool("llama-quantize"), str(source()), str(path(BASELINE)), "F16"])
+        stream([tool("llama-quantize"), str(source()), str(path(BASELINE)), "F16"],
+               config.WORK / "f16-convert.log", Progress(100, "BF16 -> F16 %"), quant_pct)
     print("quant source:", source().name, "| baseline:", path(BASELINE).name)
 
 
@@ -113,7 +154,7 @@ def make(variant, out):
     qtype, imat = variant.removesuffix("-imat"), variant.endswith("-imat")
     cmd = [tool("llama-quantize")] + (["--imatrix", imatrix()] if imat else []) + [str(source()), str(path(variant)), qtype, "2"]  # 2 threads
     t0 = time.perf_counter()
-    sh(cmd, log=out / "quant.log")
+    stream(cmd, out / "quant.log", Progress(100, f"quantize {variant} %"), quant_pct)
     return round(time.perf_counter() - t0, 1)
 
 
@@ -122,7 +163,7 @@ def bench(model):
     cmd = [tool("llama-bench"), "-m", str(model), "-ngl", "99", "-p", str(config.CTX),
            "-n", str(config.GEN_TOKENS), "-r", "3", "-o", "json"]
     rows = json.loads(subprocess.run(cmd, capture_output=True, text=True, check=True).stdout)  # JSON on stdout, logs on stderr
-    pp =next(r["avg_ts"] for r in rows if r["n_prompt"] > 0)
+    pp = next(r["avg_ts"] for r in rows if r["n_prompt"] > 0)
     tg = next(r["avg_ts"] for r in rows if r["n_gen"] > 0)
     return {"prefill_tps": round(pp, 1), "ttft_ms": round(config.CTX / pp * 1000, 1), "decode_tps": round(tg, 1)}
 
@@ -132,10 +173,10 @@ def kld(model, variant, out):
     ref = config.WORK / f"kld-ref-{config.MODEL_NAME}.kld"
     common = [tool("llama-perplexity"), "-m", str(model), "-ngl", "99", "--kl-divergence-base", str(ref)]
     if variant == BASELINE:
-        t = sh(common + ["-f", str(config.DATA / "wiki.test.raw"), "-c", str(config.CTX),
-                         "--chunks", str(config.KLD_CHUNKS)], log=out / "kld.log")
+        t = stream(common + ["-f", str(config.DATA / "wiki.test.raw"), "-c", str(config.CTX), "--chunks", str(config.KLD_CHUNKS)],
+                   out / "kld.log", Progress(config.KLD_CHUNKS, "KLD reference chunks"), ppl_chunks)
         return {"ppl": float(re.search(r"Final estimate: PPL = ([\d.]+)", t).group(1)), "mean_kld": 0.0, "top1_agree": 1.0}
-    t = sh(common + ["--kl-divergence"], log=out / "kld.log")
+    t = stream(common + ["--kl-divergence"], out / "kld.log", Progress(config.KLD_CHUNKS, "KLD chunks"), ppl_chunks)
     grab = lambda p: float(re.search(p, t).group(1))
     return {"ppl": grab(r"Mean PPL\(Q\)\s*:\s*([\d.]+)"),
             "mean_kld": grab(r"Mean\s+KLD:\s+([-\d.]+)"),
@@ -169,9 +210,15 @@ class Server:
             extra_body={"chat_template_kwargs": {"enable_thinking": False}})
         return r.choices[0].message.content or "", r.usage.completion_tokens
 
-    def generate(self, chats, max_tokens):
+    def generate(self, chats, max_tokens, label="generate"):
+        bar, tokens = Progress(len(chats), label), 0
         with ThreadPoolExecutor(config.PARALLEL) as pool:
-            return list(pool.map(lambda c: self._one(c, max_tokens), chats))
+            futures = [pool.submit(self._one, c, max_tokens) for c in chats]
+            for f in as_completed(futures):
+                tokens += f.result()[1]
+                bar.update(1, info=f"{tokens / (time.time() - bar.start):.0f} tok/s across {config.PARALLEL} slots")
+        bar.done()
+        return [f.result() for f in futures]
 
     def close(self):
         self.proc.terminate()

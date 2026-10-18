@@ -10,6 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from qlab import config
 from qlab.data import wiki_text
+from qlab.progress import Progress
 
 torch.zeros(1, device="cuda:0")  # create the CUDA context now, so it isn't counted in the first variant's memory
 DTYPE = torch.bfloat16 if torch.cuda.get_device_capability(0)[0] >= 8 else torch.float16
@@ -58,8 +59,9 @@ def download(variants):
     Quantize-on-load variants (bnb, hqq, torchao) all share the original repo; variants already measured are skipped."""
     from huggingface_hub import snapshot_download
     todo = [v for v in variants if not (config.RESULTS / f"hf-{v}" / "metrics.json").exists()]
-    for repo in dict.fromkeys(repo_for(v) for v in todo):
-        print("downloading", repo, flush=True)
+    repos = list(dict.fromkeys(repo_for(v) for v in todo))
+    for i, repo in enumerate(repos, 1):
+        print(f"[{i}/{len(repos)}] downloading {repo}", flush=True)
         snapshot_download(repo, allow_patterns=["*.json", "*.safetensors", "*.txt", "*.jinja"])
 
 
@@ -68,6 +70,8 @@ class HFModel:
         repo, make_qcfg = repo_for(variant), VARIANTS[variant][1]
         kwargs = {"quantization_config": make_qcfg()} if make_qcfg else {}
 
+        print(f"    loading {repo}" + (f" + quantizing on load ({type(kwargs['quantization_config']).__name__})" if kwargs else ""),
+              flush=True)
         t0 = time.perf_counter()
         self.tok = AutoTokenizer.from_pretrained(config.MODEL_ID, padding_side="left")
         self.model = AutoModelForCausalLM.from_pretrained(repo, dtype=DTYPE, device_map="cuda:0", **kwargs).eval()
@@ -75,11 +79,12 @@ class HFModel:
         self.repo = repo
         self.weights_gb = round(self.model.get_memory_footprint() / 1e9, 3)
         self.n_params = sum(p.numel() for p in self.model.parameters())  # packed for quantized models; use the baseline's
+        print(f"    loaded in {self.load_s}s, weights {self.weights_gb} GB", flush=True)
 
     @torch.no_grad()
-    def generate(self, chats, max_tokens):
+    def generate(self, chats, max_tokens, label="generate"):
         """Greedy, batched. Returns [(text, n_new_tokens)]."""
-        out = []
+        out, bar = [], Progress(len(chats), label)
         for i in range(0, len(chats), config.BATCH):
             texts = [self.tok.apply_chat_template(c, tokenize=False, add_generation_prompt=True, enable_thinking=False)
                      for c in chats[i : i + config.BATCH]]
@@ -89,8 +94,9 @@ class HFModel:
             new = gen[:, enc.input_ids.shape[1]:]
             for row in new:
                 out.append((self.tok.decode(row, skip_special_tokens=True), int((row != self.tok.pad_token_id).sum())))
-            print(f"  generated {len(out)}/{len(chats)}", end="\r", flush=True)
-        print()
+            tokens = sum(k for _, k in out)
+            bar.update(len(new), info=f"{tokens / (time.time() - bar.start):.0f} tok/s at batch {config.BATCH}")
+        bar.done()
         return out
 
     @torch.no_grad()
@@ -106,6 +112,7 @@ class HFModel:
                 t0 = time.perf_counter(); fn(); sync(); times.append(time.perf_counter() - t0)
             return sorted(times)[reps // 2]  # median
 
+        print(f"    speed test: prefill {config.CTX} tokens, decode {config.GEN_TOKENS}, median of {reps}", flush=True)
         prefill_s = timed(lambda: self.model(ids))
         n = config.GEN_TOKENS
         total_s = timed(lambda: self.model.generate(ids, max_new_tokens=n, min_new_tokens=n, do_sample=False,
@@ -141,24 +148,28 @@ def ref_dir():
 def save_reference(m):
     """Baseline only: store its log-probs per chunk (fp16 on disk, ~155 MB per chunk for a 152K vocab)."""
     ref_dir().mkdir(parents=True, exist_ok=True)
-    nll = []
+    nll, bar = [], Progress(config.KLD_CHUNKS, "KLD reference chunks")
     for i, chunk in enumerate(kld_chunks(m.tok)):
         lp = m.logprobs(chunk)
         torch.save(lp.half().cpu(), ref_dir() / f"{i}.pt")
         nll.append(-lp[:-1].gather(1, torch.tensor(chunk[1:], device="cuda:0")[:, None]).mean().item())
+        bar.update()
+    bar.done()
     return {"ppl": round(float(torch.tensor(nll).mean().exp()), 4), "mean_kld": 0.0, "top1_agree": 1.0}
 
 
 @torch.no_grad()
 def compare_to_reference(m):
     """KL(P_base || P_quant) per token, top-1 agreement, and perplexity, on the same chunks."""
-    kls, agree, nll = [], [], []
+    kls, agree, nll, bar = [], [], [], Progress(config.KLD_CHUNKS, "KLD chunks")
     for i, chunk in enumerate(kld_chunks(m.tok)):
         ref = torch.load(ref_dir() / f"{i}.pt").to("cuda:0").float()[:-1]
         lp = m.logprobs(chunk)[:-1]
         kls.append((ref.exp() * (ref - lp)).sum(-1))
         agree.append((ref.argmax(-1) == lp.argmax(-1)).float())
         nll.append(-lp.gather(1, torch.tensor(chunk[1:], device="cuda:0")[:, None]).squeeze(1))
+        bar.update(info=f"mean KLD so far {float(torch.cat(kls).mean()):.4f}")
+    bar.done()
     kls, agree, nll = torch.cat(kls), torch.cat(agree), torch.cat(nll)
     return {"ppl": round(float(nll.mean().exp()), 4),
             "mean_kld": round(float(kls.mean()), 5),
