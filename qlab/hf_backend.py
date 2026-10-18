@@ -48,10 +48,24 @@ VARIANTS = {
 }
 
 
+def repo_for(variant):
+    repo = VARIANTS[variant][0] or config.MODEL_ID
+    return repo.format(id=config.MODEL_ID, name=config.MODEL_NAME)
+
+
+def download(variants):
+    """Fetch every checkpoint up front, so `load_s` measures loading, not downloading.
+    Quantize-on-load variants (bnb, hqq, torchao) all share the original repo; variants already measured are skipped."""
+    from huggingface_hub import snapshot_download
+    todo = [v for v in variants if not (config.RESULTS / f"hf-{v}" / "metrics.json").exists()]
+    for repo in dict.fromkeys(repo_for(v) for v in todo):
+        print("downloading", repo, flush=True)
+        snapshot_download(repo, allow_patterns=["*.json", "*.safetensors", "*.txt", "*.jinja"])
+
+
 class HFModel:
     def __init__(self, variant):
-        repo, make_qcfg = VARIANTS[variant]
-        repo = (repo or config.MODEL_ID).format(id=config.MODEL_ID, name=config.MODEL_NAME)
+        repo, make_qcfg = repo_for(variant), VARIANTS[variant][1]
         kwargs = {"quantization_config": make_qcfg()} if make_qcfg else {}
 
         t0 = time.perf_counter()

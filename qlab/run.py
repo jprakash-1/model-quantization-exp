@@ -104,7 +104,7 @@ def main():
     if args.track == "gguf":
         from qlab import gguf_backend as gg
         gg.build()
-        gg.prepare()
+        gg.prepare(args.variants)  # no-op for files the notebook already downloaded
     run_all(args.track, args.variants)
     print("TRACK DONE", flush=True)
 

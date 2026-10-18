@@ -67,11 +67,15 @@ def source():
     return next(p for p in (path("BF16"), path("F16")) if p.exists())
 
 
-def prepare():
-    """Download the 16-bit GGUF + Unsloth's imatrix; make the F16 baseline if the source is BF16."""
+def prepare(variants=()):
+    """Download the 16-bit GGUF, Unsloth's imatrix and the `UD-*` files not yet measured.
+    Make the F16 baseline if the source is BF16 (needs llama.cpp built)."""
     files = list_repo_files(config.GGUF_REPO)
     src = next(f for f in (f"{config.MODEL_NAME}-BF16.gguf", f"{config.MODEL_NAME}-F16.gguf") if f in files)
-    for f in [src, next(f for f in files if f.startswith("imatrix"))]:
+    ud = [path(v).name for v in variants
+          if v.startswith("UD-") and not (config.RESULTS / f"gguf-{v}" / "metrics.json").exists()]
+    for f in [src, next(f for f in files if f.startswith("imatrix")), *ud]:
+        print("downloading", f, flush=True)
         hf_hub_download(config.GGUF_REPO, f, local_dir=gguf_dir())
     if not path(BASELINE).exists():
         sh([tool("llama-quantize"), str(source()), str(path(BASELINE)), "F16"])

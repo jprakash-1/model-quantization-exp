@@ -89,13 +89,27 @@ model-quantization-exp/
 
 ## 6. How to run
 
-1. Push this repo to GitHub (public, or private with a token).
-2. On Kaggle: **New Notebook → File → Import Notebook →** `kaggle_master.ipynb`, or just paste the cells.
-3. Sidebar: **Accelerator = GPU T4 ×2**, **Internet = On**.
-4. Edit `REPO_URL` in cell 1.
-5. First time, set `config.N_QUESTIONS = 100` and run the cells interactively to catch problems early.
-6. Then set it to 250 and **Save Version → Save & Run All (Commit)** to run unattended.
-7. Download `results/` from the notebook output, or push it back with the last cell.
+1. On Kaggle: **New Notebook → File → Import Notebook →** `https://github.com/jprakash-1/model-quantization-exp/blob/main/kaggle_master.ipynb`
+2. Sidebar: **Accelerator = GPU T4 ×2**, **Internet = On**.
+3. First time, set `N_QUESTIONS = 100` in cell 2 and run the cells interactively to catch problems early.
+4. Then set it to 250 and **Save Version → Save & Run All (Commit)** to run unattended.
+5. Download `results/` from the notebook output, or push it back with the last cell.
+
+What the notebook does, in order:
+
+| Step | Cell | What happens |
+|---|---|---|
+| Code | 1 | clone or pull this repo, `pip install -r requirements-kaggle.txt` |
+| Config | 2 | model, number of questions, both variant lists. The kernel sees only GPU 0. |
+| **Data** | 3 | `data.download()` writes wikitext-2 test, GSM8K test[:N] and ARC-Challenge test[:N] to `data/` |
+| Build | 5 | llama.cpp with CUDA for sm_75 → `/tmp/qlab/llama.cpp` |
+| **Models** | 6 | `hf.download()`: the original, Unsloth bnb-4bit and FP8 repos → HF cache. `gg.prepare()`: F16 GGUF + imatrix + `UD-*` → `/tmp/qlab/gguf`. About 30 GB total; already-measured variants are skipped. |
+| GGUF track | 8 | background job on GPU 1, makes, measures and deletes each local quant |
+| HF track | 10 | in the kernel on GPU 0 |
+| Report | 12–15 | wait for GPU 1, then the table, plots and lost answers |
+| Cleanup | 17 | delete `/tmp/qlab` and the HF cache; `results/` stays |
+
+Peak disk use is about 40 GB: HF cache 16 GB, GGUF downloads 12 GB, one local quant ≤ 4.3 GB, two KLD reference sets of ~3 GB each, and the llama.cpp build. Cell 6 prints `df` so you can check.
 
 Rough time at n=250: llama.cpp build ~15 min, then both tracks in parallel. The HF track takes ~4–6 h (HQQ and bnb-int8 are the slow ones) and the GGUF track ~3 h, so **wall time is ~5–7 h**, which fits one 12 h session.
 
