@@ -3,6 +3,7 @@
 Variant names: "F16" (baseline), "Q8_0", "Q4_K_M" (plain llama-quantize), "Q4_K_M-imat" (with Unsloth's
 importance matrix), "UD-Q4_K_XL" (download Unsloth's Dynamic quant).
 """
+import glob
 import json
 import os
 import re
@@ -39,17 +40,33 @@ def sh(cmd, log=None):
     return r.stdout + r.stderr
 
 
+def cuda_driver_lib():
+    """libcuda.so to link against. CMake doesn't find it on Kaggle, so we point at it: the toolkit's stub
+    (same soname, libcuda.so.1, so the real driver is picked up at run time) or the driver library itself."""
+    candidates = ["/usr/local/cuda/lib64/stubs/libcuda.so",
+                  "/usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so",
+                  "/usr/lib/x86_64-linux-gnu/libcuda.so",
+                  "/usr/lib/x86_64-linux-gnu/libcuda.so.1"]
+    found = [p for p in candidates if os.path.exists(p)] or sorted(glob.glob("/usr/**/libcuda.so*", recursive=True))
+    if not found:
+        raise RuntimeError("libcuda.so not found: is the GPU accelerator enabled?")
+    return found[0]
+
+
 def build():
     """~10-15 min on Kaggle's 4 CPUs. Only the four tools we use, only for this GPU's architecture (T4 = 75)."""
     if (llama_dir() / "build/bin/llama-server").exists():
         return print("llama.cpp already built")
     arch = sh("nvidia-smi -i 0 --query-gpu=compute_cap --format=csv,noheader").strip().replace(".", "")
     os.environ["CUDACXX"] = os.environ.get("CUDACXX") or shutil.which("nvcc") or "/usr/local/cuda/bin/nvcc"
-    print(f"building llama.cpp for sm_{arch} with", sh([os.environ["CUDACXX"], "--version"]).strip().splitlines()[-1])
+    print(f"building llama.cpp for sm_{arch} with", sh([os.environ["CUDACXX"], "--version"]).strip().splitlines()[-1],
+          "| libcuda:", cuda_driver_lib())
     config.WORK.mkdir(parents=True, exist_ok=True)
-    sh(f"git clone --depth 1 https://github.com/ggml-org/llama.cpp {llama_dir()}")
+    if not (llama_dir() / ".git").exists():
+        sh(f"git clone --depth 1 https://github.com/ggml-org/llama.cpp {llama_dir()}")
+    shutil.rmtree(llama_dir() / "build", ignore_errors=True)  # no stale CMake cache from a failed attempt
     sh(f"cmake -S {llama_dir()} -B {llama_dir()}/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES={arch} "
-       f"-DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release")
+       f"-DCUDA_cuda_driver_LIBRARY={cuda_driver_lib()} -DLLAMA_CURL=OFF -DGGML_CCACHE=OFF -DCMAKE_BUILD_TYPE=Release")
     sh(f"cmake --build {llama_dir()}/build -j {os.cpu_count()} --target llama-quantize llama-bench llama-perplexity llama-server")
     print(sh(f"{tool('llama-server')} --version").strip().splitlines()[-1])
 
