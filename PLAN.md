@@ -87,6 +87,18 @@ model-quantization-exp/
 └── results/<track>-<variant>/   metrics.json, eval.json (every reply), logs
 ```
 
+**What each variant leaves in `results/<track>-<variant>/`:**
+
+| File | Contents |
+|---|---|
+| `metrics.json` | **memory:** weights GB, bits/weight, peak GPU (NVML), torch peak allocated/reserved (HF), llama.cpp weights / KV cache / compute buffers (GGUF) · **speed:** prefill tok/s, decode tok/s, TTFT, each with run-to-run spread and the raw runs · **workload:** GSM8K/ARC wall time, throughput, per-question latency p50/p95, llama-server TTFT p50/p95 and decode tok/s under 8 concurrent requests · **quality:** GSM8K strict/flexible, ARC, perplexity, mean/p99 KLD, top-1 agreement, tokens per answer, answers that hit the token cap · **time:** each phase (make/load, bench, tasks, KLD) and total, start/finish timestamps · **context:** GPU, driver, library versions, llama.cpp commit, run settings |
+| `eval.json` | every GSM8K/ARC question: reply, correct or not, tokens, latency (+ server TTFT/decode for GGUF) |
+| `run.log` | everything printed while the variant ran |
+| `quant.log`, `kld.log`, `server.log` | raw llama.cpp tool output (GGUF) |
+| `error.txt` + `partial.json` | only on failure: traceback, plus every metric measured before it failed |
+
+`report.table()` merges every `metrics.json` into `results/summary.csv` / `summary.md`, adding derived columns: answers lost/gained vs baseline, and `strict_gap` (format breakage).
+
 ## 6. How to run
 
 1. On Kaggle: **New Notebook → File → Import Notebook →** `https://github.com/jprakash-1/model-quantization-exp/blob/main/kaggle_master.ipynb`

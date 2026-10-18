@@ -6,9 +6,23 @@ import pandas as pd
 
 from qlab import config
 
-COLUMNS = ["track", "variant", "bpw", "size_gb", "peak_gpu_gb", "prefill_tps", "ttft_ms", "decode_tps",
-           "ppl", "mean_kld", "p99_kld", "top1_agree", "gsm8k_strict", "gsm8k_flexible", "arc",
-           "lost_vs_base", "gained_vs_base", "gsm8k_hit_max_tokens", "gsm8k_throughput_tps", "quant_s", "load_s"]
+COLUMNS = [
+    "track", "variant",
+    # memory
+    "bpw", "size_gb", "peak_gpu_gb", "torch_peak_allocated_gb", "weights_vram_gb", "kv_cache_gb", "compute_buffer_gb",
+    # single-stream speed (median of 3, with spread)
+    "prefill_tps", "prefill_tps_std", "ttft_ms", "decode_tps", "decode_tps_std",
+    # drift vs baseline
+    "ppl", "mean_kld", "p99_kld", "top1_agree",
+    # accuracy
+    "gsm8k_strict", "gsm8k_flexible", "strict_gap", "arc", "lost_vs_base", "gained_vs_base",
+    "gsm8k_tokens_mean", "gsm8k_hit_max_tokens",
+    # under the real workload (batched HF / 8 concurrent llama-server requests)
+    "gsm8k_throughput_tps", "gsm8k_latency_p50_s", "gsm8k_latency_p95_s", "arc_latency_p50_s",
+    "server_ttft_ms_p50", "server_ttft_ms_p95", "server_decode_tps_mean",
+    # time
+    "quant_s", "load_s", "time_make_s", "time_load_s", "time_bench_s", "time_tasks_s", "time_kld_s", "time_total_s",
+]
 BASELINES = {"hf": ("fp16", "bf16"), "gguf": ("F16",)}
 
 
@@ -32,7 +46,8 @@ def table():
         rows.append({**m,
                      "bpw": round(m["size_gb"] * 8e9 / b_metrics["n_params"], 2),  # size / baseline params
                      "lost_vs_base": sum(b["flexible"] and not q["flexible"] for b, q in pairs),
-                     "gained_vs_base": sum(q["flexible"] and not b["flexible"] for b, q in pairs)})
+                     "gained_vs_base": sum(q["flexible"] and not b["flexible"] for b, q in pairs),
+                     "strict_gap": round(m["gsm8k_flexible"] - m["gsm8k_strict"], 4)})  # answer-format breakage
     df = pd.DataFrame(rows).reindex(columns=COLUMNS).sort_values(["track", "bpw"], ascending=[True, False])
     df.to_csv(config.RESULTS / "summary.csv", index=False)
     md = df.to_markdown(index=False)

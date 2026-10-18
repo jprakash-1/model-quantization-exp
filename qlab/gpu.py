@@ -6,10 +6,13 @@ import time
 import pynvml
 
 
+def physical_gpu():
+    """NVML and nvidia-smi ignore CUDA_VISIBLE_DEVICES, so map it ourselves: CUDA_VISIBLE_DEVICES=1 -> GPU 1."""
+    return int(os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0])
+
+
 class PeakGpuMemory:
     """Samples used memory on this process's GPU every 50 ms. `peak_gb` = highest level above the level at start.
-
-    NVML ignores CUDA_VISIBLE_DEVICES, so we map it ourselves: CUDA_VISIBLE_DEVICES=1 -> physical GPU 1.
 
         with PeakGpuMemory() as mem:
             ...load and run a model...
@@ -18,7 +21,7 @@ class PeakGpuMemory:
 
     def __enter__(self):
         pynvml.nvmlInit()
-        self.handle = pynvml.nvmlDeviceGetHandleByIndex(int(os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0]))
+        self.handle = pynvml.nvmlDeviceGetHandleByIndex(physical_gpu())
         self.start = self.peak = self._used()
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._sample, daemon=True)
@@ -36,6 +39,10 @@ class PeakGpuMemory:
     def __exit__(self, *exc):
         self._stop.set()
         self._thread.join()
+
+    @property
+    def start_gb(self):
+        return round(self.start / 1e9, 3)
 
     @property
     def peak_gb(self):

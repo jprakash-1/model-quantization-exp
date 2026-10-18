@@ -3,6 +3,7 @@
 Baseline is BF16 on GPUs that support it (compute capability >= 8, e.g. A100/L4) and FP16 on a T4 (7.5).
 """
 import gc
+import statistics
 import time
 
 import torch
@@ -83,18 +84,21 @@ class HFModel:
 
     @torch.no_grad()
     def generate(self, chats, max_tokens, label="generate"):
-        """Greedy, batched. Returns [(text, n_new_tokens)]."""
+        """Greedy, batched. Returns one dict per chat: text, tokens, latency_s (= its batch's wall time)."""
         out, bar = [], Progress(len(chats), label)
         for i in range(0, len(chats), config.BATCH):
             texts = [self.tok.apply_chat_template(c, tokenize=False, add_generation_prompt=True, enable_thinking=False)
                      for c in chats[i : i + config.BATCH]]
             enc = self.tok(texts, return_tensors="pt", padding=True).to("cuda:0")
+            t0 = time.perf_counter()
             gen = self.model.generate(**enc, max_new_tokens=max_tokens, do_sample=False,
                                       temperature=None, top_p=None, top_k=None, pad_token_id=self.tok.pad_token_id)
+            batch_s = time.perf_counter() - t0
             new = gen[:, enc.input_ids.shape[1]:]
             for row in new:
-                out.append((self.tok.decode(row, skip_special_tokens=True), int((row != self.tok.pad_token_id).sum())))
-            tokens = sum(k for _, k in out)
+                out.append({"text": self.tok.decode(row, skip_special_tokens=True),
+                            "tokens": int((row != self.tok.pad_token_id).sum()), "latency_s": round(batch_s, 3)})
+            tokens = sum(o["tokens"] for o in out)
             bar.update(len(new), info=f"{tokens / (time.time() - bar.start):.0f} tok/s at batch {config.BATCH}")
         bar.done()
         return out
@@ -110,17 +114,22 @@ class HFModel:
             times = []
             for _ in range(reps):
                 t0 = time.perf_counter(); fn(); sync(); times.append(time.perf_counter() - t0)
-            return sorted(times)[reps // 2]  # median
+            return times
 
         print(f"    speed test: prefill {config.CTX} tokens, decode {config.GEN_TOKENS}, median of {reps}", flush=True)
-        prefill_s = timed(lambda: self.model(ids))
         n = config.GEN_TOKENS
-        total_s = timed(lambda: self.model.generate(ids, max_new_tokens=n, min_new_tokens=n, do_sample=False,
-                                                    temperature=None, top_p=None, top_k=None,
-                                                    pad_token_id=self.tok.pad_token_id))
+        prefill = timed(lambda: self.model(ids))
+        total = timed(lambda: self.model.generate(ids, max_new_tokens=n, min_new_tokens=n, do_sample=False,
+                                                  temperature=None, top_p=None, top_k=None,
+                                                  pad_token_id=self.tok.pad_token_id))
+        prefill_s = statistics.median(prefill)
+        decode_tps = [n / (t - prefill_s) for t in total]
         return {"prefill_tps": round(config.CTX / prefill_s, 1),
                 "ttft_ms": round(prefill_s * 1000, 1),
-                "decode_tps": round(n / (total_s - prefill_s), 1)}
+                "decode_tps": round(statistics.median(decode_tps), 1),
+                "prefill_tps_std": round(statistics.stdev(config.CTX / t for t in prefill), 1),
+                "decode_tps_std": round(statistics.stdev(decode_tps), 2),
+                "bench_runs": {"prefill_s": [round(t, 4) for t in prefill], "prefill_plus_decode_s": [round(t, 4) for t in total]}}
 
     @torch.no_grad()
     def logprobs(self, ids):

@@ -1,6 +1,6 @@
 """GSM8K + ARC-Challenge: prompts, scoring, and one runner that works with any backend.
 
-A backend only has to provide `generate(list_of_chats, max_tokens, label) -> list of (text, n_tokens)`.
+A backend only has to provide `generate(list_of_chats, max_tokens, label) -> [{text, tokens, latency_s, ...}]`.
 Decoding is greedy with thinking mode off, identical for every variant.
 """
 import re
@@ -57,21 +57,40 @@ def run(generate, n=None):
         chat(ARC_SYSTEM, r["question"] + "\n\n" + "\n".join(f"{k}. {v}" for k, v in r["choices"].items()) + "\n\nAnswer:")
         for r in arc_rows
     ]
+    t1 = time.perf_counter()
     arc_out = generate(arc_prompts, max_tokens=5, label="ARC")
+    arc_s = time.perf_counter() - t1
 
-    gsm = [{"i": i, **score_gsm8k(clean(t), r["answer"]), "tokens": k, "reply": clean(t)}
-           for i, (r, (t, k)) in enumerate(zip(gsm_rows, gsm_out))]
-    arc = [{"i": i, **score_arc(clean(t), r["label"]), "reply": clean(t)}
-           for i, (r, (t, _)) in enumerate(zip(arc_rows, arc_out))]
+    # one record per question: correctness + its own timing (kept in eval.json)
+    timing = lambda o: {k: v for k, v in o.items() if k != "text"}
+    gsm = [{"i": i, **score_gsm8k(clean(o["text"]), r["answer"]), **timing(o), "reply": clean(o["text"])}
+           for i, (r, o) in enumerate(zip(gsm_rows, gsm_out))]
+    arc = [{"i": i, **score_arc(clean(o["text"]), r["label"]), **timing(o), "reply": clean(o["text"])}
+           for i, (r, o) in enumerate(zip(arc_rows, arc_out))]
 
     mean = lambda xs: round(statistics.mean(xs), 4)
+    pct = lambda xs, q: round(sorted(xs)[min(len(xs) - 1, int(q * len(xs)))], 3)
+    server_ttft = [g["ttft_ms"] for g in gsm if g.get("ttft_ms") is not None]
+    server_tps = [g["decode_tps"] for g in gsm if g.get("decode_tps") is not None]
     summary = {
         "n": n,
+        # accuracy
         "gsm8k_strict": mean([g["strict"] for g in gsm]),
         "gsm8k_flexible": mean([g["flexible"] for g in gsm]),
         "arc": mean([a["correct"] for a in arc]),
+        # generation behaviour
         "gsm8k_tokens_mean": mean([g["tokens"] for g in gsm]),
         "gsm8k_hit_max_tokens": sum(g["tokens"] >= 512 for g in gsm),  # rambling / repetition loops
-        "gsm8k_throughput_tps": round(sum(g["tokens"] for g in gsm) / gsm_s, 1),  # batched, not single-stream
+        # time under the real workload (batched / concurrent, not single-stream)
+        "gsm8k_wall_s": round(gsm_s, 1),
+        "arc_wall_s": round(arc_s, 1),
+        "gsm8k_throughput_tps": round(sum(g["tokens"] for g in gsm) / gsm_s, 1),
+        "gsm8k_latency_p50_s": pct([g["latency_s"] for g in gsm], 0.50),
+        "gsm8k_latency_p95_s": pct([g["latency_s"] for g in gsm], 0.95),
+        "arc_latency_p50_s": pct([a["latency_s"] for a in arc], 0.50),
+        # llama-server only: per-request TTFT and decode speed while 8 requests share the GPU
+        "server_ttft_ms_p50": pct(server_ttft, 0.50) if server_ttft else None,
+        "server_ttft_ms_p95": pct(server_ttft, 0.95) if server_ttft else None,
+        "server_decode_tps_mean": mean(server_tps) if server_tps else None,
     }
     return {"summary": summary, "gsm8k": gsm, "arc": arc}

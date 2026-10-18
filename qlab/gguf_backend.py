@@ -163,9 +163,13 @@ def bench(model):
     cmd = [tool("llama-bench"), "-m", str(model), "-ngl", "99", "-p", str(config.CTX),
            "-n", str(config.GEN_TOKENS), "-r", "3", "-o", "json"]
     rows = json.loads(subprocess.run(cmd, capture_output=True, text=True, check=True).stdout)  # JSON on stdout, logs on stderr
-    pp = next(r["avg_ts"] for r in rows if r["n_prompt"] > 0)
-    tg = next(r["avg_ts"] for r in rows if r["n_gen"] > 0)
-    return {"prefill_tps": round(pp, 1), "ttft_ms": round(config.CTX / pp * 1000, 1), "decode_tps": round(tg, 1)}
+    pp = next(r for r in rows if r["n_prompt"] > 0)
+    tg = next(r for r in rows if r["n_gen"] > 0)
+    return {"prefill_tps": round(pp["avg_ts"], 1), "ttft_ms": round(config.CTX / pp["avg_ts"] * 1000, 1),
+            "decode_tps": round(tg["avg_ts"], 1),
+            "prefill_tps_std": round(pp["stddev_ts"], 1), "decode_tps_std": round(tg["stddev_ts"], 2),
+            "bench_runs": {"prefill_ns": pp.get("samples_ns"), "decode_ns": tg.get("samples_ns"),
+                           "build_commit": pp.get("build_commit"), "gpu_info": pp.get("gpu_info")}}
 
 
 def kld(model, variant, out):
@@ -205,17 +209,21 @@ class Server:
         raise TimeoutError("llama-server did not start")
 
     def _one(self, messages, max_tokens):
+        t0 = time.perf_counter()
         r = self.client.chat.completions.create(
             model="default", messages=messages, temperature=0, max_tokens=max_tokens,
             extra_body={"chat_template_kwargs": {"enable_thinking": False}})
-        return r.choices[0].message.content or "", r.usage.completion_tokens
+        timings = (r.model_extra or {}).get("timings") or {}  # llama-server's own per-request timings
+        return {"text": r.choices[0].message.content or "", "tokens": r.usage.completion_tokens,
+                "latency_s": round(time.perf_counter() - t0, 3),
+                "ttft_ms": timings.get("prompt_ms"), "decode_tps": timings.get("predicted_per_second")}
 
     def generate(self, chats, max_tokens, label="generate"):
         bar, tokens = Progress(len(chats), label), 0
         with ThreadPoolExecutor(config.PARALLEL) as pool:
             futures = [pool.submit(self._one, c, max_tokens) for c in chats]
             for f in as_completed(futures):
-                tokens += f.result()[1]
+                tokens += f.result()["tokens"]
                 bar.update(1, info=f"{tokens / (time.time() - bar.start):.0f} tok/s across {config.PARALLEL} slots")
         bar.done()
         return [f.result() for f in futures]
@@ -224,3 +232,11 @@ class Server:
         self.proc.terminate()
         self.proc.wait(30)
         self.log.close()
+
+    @staticmethod
+    def buffers(log):
+        """GPU memory llama.cpp reports at load: weights, KV cache, compute scratch (GB)."""
+        text = log.read_text()
+        mib = lambda what: sum(map(float, re.findall(rf"CUDA\d+ {what} buffer size\s*=\s*([\d.]+) MiB", text))) or None
+        gb = lambda v: round(v / 1024, 3) if v else None
+        return {"weights_vram_gb": gb(mib("model")), "kv_cache_gb": gb(mib("KV")), "compute_buffer_gb": gb(mib("compute"))}
