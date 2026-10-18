@@ -11,13 +11,12 @@ import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-import torch
 from huggingface_hub import hf_hub_download, list_repo_files
 from openai import OpenAI
 
 from qlab import config
 
-BASELINE = "F16"  # P100/T4 have no BF16, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
+BASELINE = "F16"  # T4 has no BF16, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
 PORT = 8080
 
 
@@ -41,20 +40,15 @@ def sh(cmd, log=None):
 
 
 def build():
-    """~10-15 min on Kaggle's 4 CPUs. Only the four tools we use, only for this GPU's architecture."""
+    """~10-15 min on Kaggle's 4 CPUs. Only the four tools we use, only for this GPU's architecture (T4 = 75)."""
     if (llama_dir() / "build/bin/llama-server").exists():
         return print("llama.cpp already built")
-    major, minor = torch.cuda.get_device_capability(0)
-    nvcc = os.environ.get("CUDACXX") or shutil.which("nvcc") or "/usr/local/cuda/bin/nvcc"
-    cuda = re.search(r"release (\d+)\.(\d+)", sh([nvcc, "--version"]))
-    print(f"GPU sm_{major}{minor}, nvcc {cuda.group(1)}.{cuda.group(2)} at {nvcc}")
-    if major < 7 and int(cuda.group(1)) >= 13:
-        raise RuntimeError("CUDA 13 cannot compile for Pascal (P100). Point CUDACXX at a CUDA 12.x nvcc, "
-                           "e.g. `ls /usr/local | grep cuda`, then os.environ['CUDACXX'] = '/usr/local/cuda-12.x/bin/nvcc'")
-    os.environ["CUDACXX"] = nvcc
+    arch = sh("nvidia-smi -i 0 --query-gpu=compute_cap --format=csv,noheader").strip().replace(".", "")
+    os.environ["CUDACXX"] = os.environ.get("CUDACXX") or shutil.which("nvcc") or "/usr/local/cuda/bin/nvcc"
+    print(f"building llama.cpp for sm_{arch} with", sh([os.environ["CUDACXX"], "--version"]).strip().splitlines()[-1])
     config.WORK.mkdir(parents=True, exist_ok=True)
     sh(f"git clone --depth 1 https://github.com/ggml-org/llama.cpp {llama_dir()}")
-    sh(f"cmake -S {llama_dir()} -B {llama_dir()}/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES={major}{minor} "
+    sh(f"cmake -S {llama_dir()} -B {llama_dir()}/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES={arch} "
        f"-DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release")
     sh(f"cmake --build {llama_dir()}/build -j {os.cpu_count()} --target llama-quantize llama-bench llama-perplexity llama-server")
     print(sh(f"{tool('llama-server')} --version").strip().splitlines()[-1])
@@ -96,7 +90,7 @@ def make(variant, out):
         hf_hub_download(config.GGUF_REPO, path(variant).name, local_dir=gguf_dir())
         return None
     qtype, imat = variant.removesuffix("-imat"), variant.endswith("-imat")
-    cmd = [tool("llama-quantize")] + (["--imatrix", imatrix()] if imat else []) + [str(source()), str(path(variant)), qtype]
+    cmd = [tool("llama-quantize")] + (["--imatrix", imatrix()] if imat else []) + [str(source()), str(path(variant)), qtype, "2"]  # 2 threads
     t0 = time.perf_counter()
     sh(cmd, log=out / "quant.log")
     return round(time.perf_counter() - t0, 1)

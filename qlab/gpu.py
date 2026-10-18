@@ -1,4 +1,5 @@
 """Peak GPU memory, measured the same way for in-process (HF) and subprocess (llama-server) models."""
+import os
 import threading
 import time
 
@@ -6,7 +7,9 @@ import pynvml
 
 
 class PeakGpuMemory:
-    """Samples used memory on GPU 0 every 50 ms. `peak_gb` = highest level above the level at start.
+    """Samples used memory on this process's GPU every 50 ms. `peak_gb` = highest level above the level at start.
+
+    NVML ignores CUDA_VISIBLE_DEVICES, so we map it ourselves: CUDA_VISIBLE_DEVICES=1 -> physical GPU 1.
 
         with PeakGpuMemory() as mem:
             ...load and run a model...
@@ -15,7 +18,7 @@ class PeakGpuMemory:
 
     def __enter__(self):
         pynvml.nvmlInit()
-        self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        self.handle = pynvml.nvmlDeviceGetHandleByIndex(int(os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0]))
         self.start = self.peak = self._used()
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._sample, daemon=True)

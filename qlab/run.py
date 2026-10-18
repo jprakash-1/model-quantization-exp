@@ -2,7 +2,11 @@
 
 Each finished variant writes metrics.json, so a re-run skips it (resume after a Kaggle timeout).
 A failing variant writes error.txt and the loop moves on: a format that won't run on your GPU is a result too.
+
+From the notebook: run.run_all("hf", [...]). As a background job on the second GPU:
+    CUDA_VISIBLE_DEVICES=1 python -m qlab.run gguf F16 Q8_0 Q4_K_M --n 250
 """
+import argparse
 import json
 import shutil
 import traceback
@@ -86,3 +90,24 @@ def cleanup():
     from huggingface_hub import constants
     shutil.rmtree(constants.HF_HUB_CACHE, ignore_errors=True)
     print("deleted", config.WORK, "and", constants.HF_HUB_CACHE)
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("track", choices=["hf", "gguf"])
+    p.add_argument("variants", nargs="+")
+    p.add_argument("--n", type=int, default=config.N_QUESTIONS)
+    p.add_argument("--model", default=config.MODEL_ID)
+    args = p.parse_args()
+    config.N_QUESTIONS = args.n
+    config.set_model(args.model)
+    if args.track == "gguf":
+        from qlab import gguf_backend as gg
+        gg.build()
+        gg.prepare()
+    run_all(args.track, args.variants)
+    print("TRACK DONE", flush=True)
+
+
+if __name__ == "__main__":
+    main()

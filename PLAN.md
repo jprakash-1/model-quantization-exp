@@ -3,7 +3,7 @@
 Goal: learn what quantization costs and buys by measuring **one model** against its 16-bit original. For every format, measure **memory, speed, latency and quality**.
 This is a lab notebook, not a product: one config file, a few short modules, one master notebook.
 
-Everything runs on **Kaggle** on a free **NVIDIA P100** (a T4 also works). Nothing heavy runs locally: no weights are downloaded and no inference engines are installed on this Mac.
+Everything runs on **Kaggle** on the free **2× NVIDIA T4** accelerator. Nothing heavy runs locally: no weights are downloaded and no inference engines are installed on this Mac.
 
 ---
 
@@ -11,20 +11,20 @@ Everything runs on **Kaggle** on a free **NVIDIA P100** (a T4 also works). Nothi
 
 | Kaggle fact | Consequence |
 |---|---|
-| NVIDIA **P100 16 GB HBM2** (Pascal, compute capability 6.0, ~730 GB/s) | bitsandbytes, HQQ and llama.cpp CUDA all run. Decode is memory-bound, so high bandwidth makes it fast. |
-| P100 has **no BF16, no FP8, no tensor cores** | The 16-bit baseline is **FP16** (the code picks BF16 automatically on an A100/L4). FP8 is in the list *on purpose*: watching it fail is the lesson "your GPU decides the format". |
-| P100 lacks **`dp4a`** (int8 dot product, cc 6.1+) | llama.cpp's quantized matmuls take slower fallback paths. Speed gains from quantizing may be smaller than on newer GPUs, which is itself worth noticing. |
-| Recent **PyTorch builds dropped Pascal** kernels; **CUDA 13 can't compile for Pascal** | Cell 1 checks and installs the CUDA 12.6 PyTorch build if needed. `gguf_backend.build()` checks the nvcc version first and says what to do. |
+| **2 × Tesla T4, 15 GB each** (Turing, compute capability 7.5, ~320 GB/s), driver 580 / CUDA 13.0 | Everything runs: bitsandbytes, HQQ, llama.cpp CUDA (with fast int8 kernels). |
+| **Two GPUs** | **One track per GPU, in parallel.** The HF track runs in the notebook kernel on GPU 0. The GGUF track runs as a background job (`python -m qlab.run gguf ...`) on GPU 1. The model is never split across GPUs, so memory numbers stay clean. |
+| T4 has **no BF16, no FP8** | The 16-bit baseline is **FP16** (the code picks BF16 automatically on an A100/L4). FP8 is in the list *on purpose*: watching it fail is the lesson "your GPU decides the format". |
+| 4 CPU cores shared by both tracks | llama.cpp is compiled *before* either track starts measuring, and `llama-quantize` is limited to 2 threads. NVML ignores `CUDA_VISIBLE_DEVICES`, so `gpu.py` maps it to the right physical GPU. |
 | ~70 GB disk, 20 GB of it persisted in `/kaggle/working` | Big files go to `/tmp/qlab`, results to the repo's `results/` (persisted). GGUF quants are deleted after measuring (rolling). |
 | 12 h max per session, ~30 GPU-h per week | Every variant saves its own `metrics.json`. Re-running skips finished ones, so a timeout loses nothing. |
 
 ## 2. The model
 
 **`Qwen/Qwen3-4B-Instruct-2507`**: 4.02B params, non-thinking instruct, greedy decoding.
-- FP16 is 8 GB. That fits the P100's 16 GB with room for batched generation and the KV cache.
+- FP16 is 8 GB. That fits one 15 GB T4 with room for batched generation and the KV cache. An 8B model would be 16 GB in FP16 and wouldn't fit one T4.
 - It's big enough to be useful, and small enough that 3-bit and 2-bit damage is clearly visible.
 - Every format has a ready source: the original weights, `unsloth/Qwen3-4B-Instruct-2507-GGUF` (F16 + imatrix + `UD-*`), `unsloth/Qwen3-4B-Instruct-2507-unsloth-bnb-4bit`, and `Qwen/Qwen3-4B-Instruct-2507-FP8`.
-- Not chosen: **Qwen3.5-4B** (4.66B, multimodal, linear-attention layers whose fast kernels need Triton, which doesn't support Pascal).
+- Not chosen: **Qwen3.5-4B** (4.66B, multimodal, plus hybrid linear-attention layers, which are less mature in bitsandbytes/HQQ/llama.cpp and would make the comparison about the kernels, not the quantization).
 - `config.set_model("Qwen/Qwen3-1.7B")` gives a ~2.5× faster run on a smaller model.
 
 ## 3. Variants (two tracks, each against its own baseline)
@@ -39,7 +39,7 @@ Everything runs on **Kaggle** on a free **NVIDIA P100** (a T4 also works). Nothi
 | `bnb-nf4-dq` | NF4 + double-quantized scales | What do the scales cost? |
 | `unsloth-dyn4` | NF4, sensitive layers kept 16-bit | Uniform vs mixed precision |
 | `hqq4` / `hqq3` / `hqq2` | calibration-free, group 64 | Where is the cliff? |
-| `fp8` | Qwen's FP8 checkpoint | fails on a P100: needs compute capability ≥ 8.9 |
+| `fp8` | Qwen's FP8 checkpoint | fails on a T4: needs compute capability ≥ 8.9 |
 | `torchao-int8` | optional, needs an extra install | |
 
 **Track 2: llama.cpp GGUF** (`qlab/gguf_backend.py`), built from source with CUDA on Kaggle
@@ -82,7 +82,7 @@ model-quantization-exp/
 │   ├── gpu.py              # PeakGpuMemory (NVML sampler)
 │   ├── hf_backend.py       # Transformers variants, batched generate, bench, KLD
 │   ├── gguf_backend.py     # build llama.cpp, quantize, bench, KLD, llama-server
-│   ├── run.py              # run one variant end to end; resume; record failures
+│   ├── run.py              # run one variant end to end; resume; record failures; CLI for the GPU-1 job
 │   └── report.py           # summary.csv / .md / .png
 └── results/<track>-<variant>/   metrics.json, eval.json (every reply), logs
 ```
@@ -91,13 +91,13 @@ model-quantization-exp/
 
 1. Push this repo to GitHub (public, or private with a token).
 2. On Kaggle: **New Notebook → File → Import Notebook →** `kaggle_master.ipynb`, or just paste the cells.
-3. Sidebar: **Accelerator = GPU P100**, **Internet = On**.
+3. Sidebar: **Accelerator = GPU T4 ×2**, **Internet = On**.
 4. Edit `REPO_URL` in cell 1.
 5. First time, set `config.N_QUESTIONS = 100` and run the cells interactively to catch problems early.
 6. Then set it to 250 and **Save Version → Save & Run All (Commit)** to run unattended.
 7. Download `results/` from the notebook output, or push it back with the last cell.
 
-Rough time at n=250 (P100 is a bit faster than a T4 for this memory-bound work): HF track ~4–6 h (HQQ and bnb-int8 are the slow ones), llama.cpp build ~15 min, GGUF track ~3 h. That's more than one 12 h session can safely hold, so run the tracks as two separate commits; resume makes that safe.
+Rough time at n=250: llama.cpp build ~15 min, then both tracks in parallel. The HF track takes ~4–6 h (HQQ and bnb-int8 are the slow ones) and the GGUF track ~3 h, so **wall time is ~5–7 h**, which fits one 12 h session.
 
 ## 7. Questions the results should answer
 
@@ -116,8 +116,7 @@ These are in the last notebook cell too. Write the answers into `FINDINGS.md`.
 
 - **Library drift on Kaggle.** The notebook installs the latest `transformers` / `bitsandbytes` / `hqq`. If one breaks, that variant fails with `error.txt` and the rest continue. Pin a version in `requirements-kaggle.txt` to fix it.
 - **`torchao` must match the torch version**, so it is an optional cell.
-- **Driver:** cell 1 stops if the NVIDIA driver is < 525 (CUDA 10/11 era), because no current PyTorch runs on it.
 - **Batched HF generation** pads on the left. That can change a few greedy tokens compared with batch size 1. It's applied the same way to every HF variant, so comparisons within the track stay fair.
-- **PyTorch on a P100:** if the CUDA 12.6 reinstall in cell 1 also fails, pin an older pair, e.g. `torch==2.7.1 torchvision==0.22.1` from the cu126 index.
+- **Parallel tracks share 4 CPUs.** GPU-bound numbers are unaffected, but HF single-stream speed can wobble a few % when `llama-quantize` runs next to it. For exact speed numbers, re-run `run.run("hf", v, force=True)` after the GGUF job ends.
 - **The GGUF baseline is F16 and the HF baseline is FP16.** Each track's KLD is relative to its own baseline.
 - **Kaggle's internet toggle needs a phone-verified account.**
