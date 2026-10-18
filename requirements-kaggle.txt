@@ -1,12 +1,17 @@
-# On top of Kaggle's preinstalled torch + CUDA
-transformers>=4.56
-accelerate
-bitsandbytes>=0.46
-hqq
-datasets
-huggingface_hub
-nvidia-ml-py
-openai
-pandas
-matplotlib
-tabulate
+# Installed WITHOUT -U: pip only adds what's missing or below the minimum version,
+# so Kaggle's preinstalled torch / pandas / matplotlib / openai stay as they are.
+
+# Not in the Kaggle image
+bitsandbytes>=0.46      # LLM.int8 / NF4 / FP4
+hqq>=0.2.5              # Half-Quadratic Quantization
+nvidia-ml-py            # pynvml, for peak GPU memory
+
+# Already in the image; minimum versions this code needs
+transformers>=4.56      # dtype= kwarg, Qwen3, HqqConfig, TorchAoConfig
+accelerate>=1.0
+datasets>=3.0
+huggingface_hub>=0.30
+openai>=1.40,<3         # llama-server client; stay on the image's 1.x/2.x
+pandas>=2.0
+matplotlib>=3.7
+tabulate                # pandas.to_markdown
