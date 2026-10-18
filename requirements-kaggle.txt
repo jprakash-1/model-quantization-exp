@@ -1,0 +1,12 @@
+# On top of Kaggle's preinstalled torch + CUDA
+transformers>=4.56
+accelerate
+bitsandbytes>=0.46
+hqq
+datasets
+huggingface_hub
+nvidia-ml-py
+openai
+pandas
+matplotlib
+tabulate
