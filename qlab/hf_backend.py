@@ -44,7 +44,6 @@ VARIANTS = {
     "hqq3":         (None, lambda: hqq(3)),
     "hqq2":         (None, lambda: hqq(2)),
     "torchao-int8": (None, torchao_int8),                                        # int8 weight-only
-    "gptq-int8":    ("{id}-GPTQ-Int8", None),                                    # Qwen's official GPTQ; needs gptqmodel
     "fp8":          ("{id}-FP8", None),                                          # needs compute capability >= 8.9
 }
 

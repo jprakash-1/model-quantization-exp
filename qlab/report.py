@@ -9,7 +9,7 @@ from qlab import config
 COLUMNS = ["track", "variant", "bpw", "size_gb", "peak_gpu_gb", "prefill_tps", "ttft_ms", "decode_tps",
            "ppl", "mean_kld", "p99_kld", "top1_agree", "gsm8k_strict", "gsm8k_flexible", "arc",
            "lost_vs_base", "gained_vs_base", "gsm8k_hit_max_tokens", "gsm8k_throughput_tps", "quant_s", "load_s"]
-BASELINES = {"hf": ("fp16", "bf16"), "gguf": ("f16",)}
+BASELINES = {"hf": ("fp16", "bf16"), "gguf": ("F16",)}
 
 
 def load():

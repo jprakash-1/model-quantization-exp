@@ -4,7 +4,7 @@ Other modules read them as `config.X` at call time, so overrides take effect.
 """
 from pathlib import Path
 
-MODEL_ID = "Qwen/Qwen3-1.7B"          # swap for "Qwen/Qwen3-4B" to repeat on a bigger model
+MODEL_ID = "Qwen/Qwen3-4B-Instruct-2507"   # 4.02B, non-thinking; "Qwen/Qwen3-1.7B" for a faster run
 MODEL_NAME = MODEL_ID.split("/")[-1]
 GGUF_REPO = f"unsloth/{MODEL_NAME}-GGUF"
 

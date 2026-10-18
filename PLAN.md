@@ -20,11 +20,12 @@ Everything runs on **Kaggle** on a free **NVIDIA P100** (a T4 also works). Nothi
 
 ## 2. The model
 
-**`Qwen/Qwen3-1.7B`** with thinking mode off, greedy decoding.
-- FP16 is 3.4 GB, so even the 2-bit variants load fast and a full run fits in one session.
-- Small models are *more* sensitive to quantization, which makes the effects easy to see.
-- Every format has a ready source: the original weights, `unsloth/Qwen3-1.7B-GGUF` (BF16 + imatrix + `UD-*`), `unsloth/Qwen3-1.7B-unsloth-bnb-4bit`, `Qwen/Qwen3-1.7B-GPTQ-Int8`, and `Qwen/Qwen3-1.7B-FP8`.
-- `config.set_model("Qwen/Qwen3-4B")` repeats everything on a bigger model.
+**`Qwen/Qwen3-4B-Instruct-2507`**: 4.02B params, non-thinking instruct, greedy decoding.
+- FP16 is 8 GB. That fits the P100's 16 GB with room for batched generation and the KV cache.
+- It's big enough to be useful, and small enough that 3-bit and 2-bit damage is clearly visible.
+- Every format has a ready source: the original weights, `unsloth/Qwen3-4B-Instruct-2507-GGUF` (F16 + imatrix + `UD-*`), `unsloth/Qwen3-4B-Instruct-2507-unsloth-bnb-4bit`, and `Qwen/Qwen3-4B-Instruct-2507-FP8`.
+- Not chosen: **Qwen3.5-4B** (4.66B, multimodal, linear-attention layers whose fast kernels need Triton, which doesn't support Pascal).
+- `config.set_model("Qwen/Qwen3-1.7B")` gives a ~2.5× faster run on a smaller model.
 
 ## 3. Variants (two tracks, each against its own baseline)
 
@@ -39,7 +40,7 @@ Everything runs on **Kaggle** on a free **NVIDIA P100** (a T4 also works). Nothi
 | `unsloth-dyn4` | NF4, sensitive layers kept 16-bit | Uniform vs mixed precision |
 | `hqq4` / `hqq3` / `hqq2` | calibration-free, group 64 | Where is the cliff? |
 | `fp8` | Qwen's FP8 checkpoint | fails on a P100: needs compute capability ≥ 8.9 |
-| `torchao-int8`, `gptq-int8` | optional, need an extra install | |
+| `torchao-int8` | optional, needs an extra install | |
 
 **Track 2: llama.cpp GGUF** (`qlab/gguf_backend.py`), built from source with CUDA on Kaggle
 
@@ -96,7 +97,7 @@ model-quantization-exp/
 6. Then set it to 250 and **Save Version → Save & Run All (Commit)** to run unattended.
 7. Download `results/` from the notebook output, or push it back with the last cell.
 
-Rough time at n=250 (P100 is a bit faster than a T4 for this memory-bound work): HF track ~2–3 h (HQQ and bnb-int8 are the slow ones), llama.cpp build ~15 min, GGUF track ~1.5 h.
+Rough time at n=250 (P100 is a bit faster than a T4 for this memory-bound work): HF track ~4–6 h (HQQ and bnb-int8 are the slow ones), llama.cpp build ~15 min, GGUF track ~3 h. That's more than one 12 h session can safely hold, so run the tracks as two separate commits; resume makes that safe.
 
 ## 7. Questions the results should answer
 
@@ -106,7 +107,7 @@ These are in the last notebook cell too. Write the answers into `FINDINGS.md`.
 3. Does perplexity move under 1% while KLD and GSM8K clearly move?
 4. Does GSM8K drop before ARC?
 5. Do some quants break the answer *format* (strict ≪ flexible) before the math?
-6. Where is the cliff for 1.7B: 3-bit or 2-bit? Do imatrix or UD move it?
+6. Where is the cliff for a 4B model: 3-bit or 2-bit? Do imatrix or UD move it?
 7. Which formats are smaller but *not* faster (dequantization overhead)?
 8. Which variants use more GPU memory than their bits suggest, and why?
 9. What would you deploy on a 16 GB GPU?
@@ -114,7 +115,8 @@ These are in the last notebook cell too. Write the answers into `FINDINGS.md`.
 ## 8. Known risks
 
 - **Library drift on Kaggle.** The notebook installs the latest `transformers` / `bitsandbytes` / `hqq`. If one breaks, that variant fails with `error.txt` and the rest continue. Pin a version in `requirements-kaggle.txt` to fix it.
-- **`gptqmodel` compiles CUDA code** (10+ min) and `torchao` must match the torch version, so both are optional cells.
+- **`torchao` must match the torch version**, so it is an optional cell.
+- **Driver:** cell 1 stops if the NVIDIA driver is < 525 (CUDA 10/11 era), because no current PyTorch runs on it.
 - **Batched HF generation** pads on the left. That can change a few greedy tokens compared with batch size 1. It's applied the same way to every HF variant, so comparisons within the track stay fair.
 - **PyTorch on a P100:** if the CUDA 12.6 reinstall in cell 1 also fails, pin an older pair, e.g. `torch==2.7.1 torchvision==0.22.1` from the cu126 index.
 - **The GGUF baseline is F16 and the HF baseline is FP16.** Each track's KLD is relative to its own baseline.

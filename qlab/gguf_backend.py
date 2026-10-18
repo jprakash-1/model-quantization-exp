@@ -1,6 +1,6 @@
 """Track 2: llama.cpp / GGUF on GPU. Built from source with CUDA, driven through its CLI tools.
 
-Variant names: "f16" (baseline), "Q8_0", "Q4_K_M" (plain llama-quantize), "Q4_K_M-imat" (with Unsloth's
+Variant names: "F16" (baseline), "Q8_0", "Q4_K_M" (plain llama-quantize), "Q4_K_M-imat" (with Unsloth's
 importance matrix), "UD-Q4_K_XL" (download Unsloth's Dynamic quant).
 """
 import json
@@ -17,7 +17,7 @@ from openai import OpenAI
 
 from qlab import config
 
-BASELINE = "f16"  # P100/T4 have no BF16, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
+BASELINE = "F16"  # P100/T4 have no BF16, so the GGUF baseline is F16 (BF16 -> F16 is near-lossless)
 PORT = 8080
 
 
@@ -68,13 +68,20 @@ def path(variant):
     return gguf_dir() / f"{config.MODEL_NAME}-{variant}.gguf"
 
 
+def source():
+    """The 16-bit GGUF every quant is made from: BF16 when Unsloth publishes it, else F16."""
+    return next(p for p in (path("BF16"), path("F16")) if p.exists())
+
+
 def prepare():
-    """Download the BF16 GGUF (quantization source) + Unsloth's imatrix, and make the F16 baseline."""
+    """Download the 16-bit GGUF + Unsloth's imatrix; make the F16 baseline if the source is BF16."""
     files = list_repo_files(config.GGUF_REPO)
-    for f in [f"{config.MODEL_NAME}-BF16.gguf", next(f for f in files if f.startswith("imatrix"))]:
+    src = next(f for f in (f"{config.MODEL_NAME}-BF16.gguf", f"{config.MODEL_NAME}-F16.gguf") if f in files)
+    for f in [src, next(f for f in files if f.startswith("imatrix"))]:
         hf_hub_download(config.GGUF_REPO, f, local_dir=gguf_dir())
-    if not path("f16").exists():
-        sh([tool("llama-quantize"), str(path("BF16")), str(path("f16")), "F16"])
+    if not path(BASELINE).exists():
+        sh([tool("llama-quantize"), str(source()), str(path(BASELINE)), "F16"])
+    print("quant source:", source().name, "| baseline:", path(BASELINE).name)
 
 
 def imatrix():
@@ -89,7 +96,7 @@ def make(variant, out):
         hf_hub_download(config.GGUF_REPO, path(variant).name, local_dir=gguf_dir())
         return None
     qtype, imat = variant.removesuffix("-imat"), variant.endswith("-imat")
-    cmd = [tool("llama-quantize")] + (["--imatrix", imatrix()] if imat else []) + [str(path("BF16")), str(path(variant)), qtype]
+    cmd = [tool("llama-quantize")] + (["--imatrix", imatrix()] if imat else []) + [str(source()), str(path(variant)), qtype]
     t0 = time.perf_counter()
     sh(cmd, log=out / "quant.log")
     return round(time.perf_counter() - t0, 1)

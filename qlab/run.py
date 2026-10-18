@@ -48,7 +48,7 @@ def run_gguf(variant, out, keep=False):
     model = gg.path(variant)
     metrics = {"track": "gguf", "variant": variant, "quant_s": quant_s,
                "size_gb": round(model.stat().st_size / 1e9, 3),
-               "n_params": gg.path("f16").stat().st_size // 2,  # F16 = 2 bytes per weight
+               "n_params": gg.path(gg.BASELINE).stat().st_size // 2,  # F16 = 2 bytes per weight
                **gg.bench(model), **gg.kld(model, variant, out)}
     with PeakGpuMemory() as mem:
         server = gg.Server(model, out)
