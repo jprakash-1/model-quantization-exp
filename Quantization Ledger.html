@@ -1,0 +1,1719 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Quantization Ledger</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a lab notebook. Narrow reading column for prose, full-width ledgers for tables and charts, sticky model index. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #fdfdfc;
+  --ink: #0f1419;
+  --ink-2: #4b5560;
+  --ink-3: #848b93;
+  --rule: #dfe3e7;
+  --rule-strong: #c4cad0;
+  --accent: #2a78d6;
+  --accent-soft: rgba(42,120,214,0.10);
+  --seq: #2a78d6;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6;
+  --good: #0ca30c; --warn: #b07800; --crit: #d03b3b;
+  --good-ink: #006300; --crit-ink: #b42a2a;
+  --tip-bg: #0f1419; --tip-ink: #f3f4f5;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111315; --surface: #181b1e; --ink: #eef0f2; --ink-2: #b4bbc2; --ink-3: #848b93;
+    --rule: #2a2f34; --rule-strong: #3a4148; --accent: #5598e7; --accent-soft: rgba(85,152,231,0.14);
+    --seq: #3987e5;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9;
+    --good: #0ca30c; --warn: #fab219; --crit: #e66767; --good-ink: #3ccf3c; --crit-ink: #f08a8a;
+    --tip-bg: #eef0f2; --tip-ink: #111315;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111315; --surface: #181b1e; --ink: #eef0f2; --ink-2: #b4bbc2; --ink-3: #848b93;
+  --rule: #2a2f34; --rule-strong: #3a4148; --accent: #5598e7; --accent-soft: rgba(85,152,231,0.14);
+  --seq: #3987e5;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9;
+  --good: #0ca30c; --warn: #fab219; --crit: #e66767; --good-ink: #3ccf3c; --crit-ink: #f08a8a;
+  --tip-bg: #eef0f2; --tip-ink: #111315;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; letter-spacing: -0.01em; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.mono, td.num, th.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* Header */
+header.top { padding-block: 40px 28px; border-bottom: 1px solid var(--rule); }
+.kicker { font: 500 12px/1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+header.top h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.08; margin-top: 12px; font-weight: 700; }
+header.top .lede { margin-top: 14px; font-size: 17px; color: var(--ink-2); }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; font: 13px/1.4 var(--f-mono); color: var(--ink-3); }
+
+/* Sticky index */
+nav.index {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--rule);
+}
+nav.index .wrap { display: flex; gap: 4px; overflow-x: auto; padding-block: 8px; scrollbar-width: none; }
+nav.index a {
+  flex: none; text-decoration: none; color: var(--ink-2);
+  font: 500 13px/1 var(--f-mono); padding: 8px 10px; border-radius: 6px; white-space: nowrap;
+}
+nav.index a:hover { background: var(--accent-soft); color: var(--ink); }
+
+section.block { padding-block: 44px 8px; scroll-margin-top: 56px; }
+.sec-head { display: grid; gap: 8px; margin-bottom: 22px; }
+.sec-head h2 { font-size: clamp(24px, 3.4vw, 32px); font-weight: 700; }
+.sec-head .src { font: 13px/1.5 var(--f-mono); color: var(--ink-3); }
+.sec-head p { color: var(--ink-2); }
+h3 { font-size: 18px; font-weight: 500; margin-top: 30px; margin-bottom: 4px; }
+.h3-note { font-size: 13px; color: var(--ink-3); margin-bottom: 12px; }
+
+/* Glance table */
+.glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0; border: 1px solid var(--rule); background: var(--surface); border-radius: 10px; overflow: hidden; }
+.glance > div { padding: 18px 18px 20px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); display: grid; gap: 10px; align-content: start; min-width: 0; }
+.glance .g-model { font: 600 15px/1.2 var(--f-body); }
+.glance .g-kind { font: 12px/1.3 var(--f-mono); color: var(--ink-3); }
+.glance dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; }
+.glance dt { color: var(--ink-3); }
+.glance dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.glance .verdict { font-size: 13.5px; color: var(--ink-2); border-top: 1px dashed var(--rule-strong); padding-top: 10px; }
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 9px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+thead th { font: 500 11.5px/1.3 var(--f-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); background: var(--surface); position: sticky; top: 0; vertical-align: bottom; }
+th.num, td.num { text-align: right; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--accent-soft); }
+tr.ref td { font-weight: 600; }
+tr.ref td:first-child::after { content: "baseline"; margin-left: 8px; font: 500 10.5px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 2px 5px; vertical-align: 1px; }
+td.best { box-shadow: inset 0 -2px 0 var(--good); }
+.sub { color: var(--ink-3); font-size: 12px; }
+td.heat { position: relative; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font: 500 11px/1 var(--f-mono); padding: 3px 6px; border-radius: 4px; letter-spacing: 0.03em; }
+.chip.crit { color: var(--crit-ink); border: 1px solid var(--crit); }
+.chip.good { color: var(--good-ink); border: 1px solid var(--good); }
+.chip svg { width: 10px; height: 10px; }
+
+/* Charts */
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; margin-top: 16px; }
+.figure { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 16px 10px; min-width: 0; }
+.figure .f-title { font: 600 14px/1.3 var(--f-body); }
+.figure .f-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.figure .chart { margin-top: 10px; position: relative; }
+.figure svg { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend i.line { height: 2px; width: 14px; border-radius: 1px; }
+.legend i.dash { height: 0; width: 14px; border-top: 2px dashed var(--ink-3); background: none !important; }
+svg text { font-family: var(--f-mono); fill: var(--ink-3); font-size: 11px; }
+svg .lbl { fill: var(--ink-2); font-size: 11px; }
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .axis { stroke: var(--rule-strong); stroke-width: 1; }
+.tip {
+  position: fixed; pointer-events: none; z-index: 20; background: var(--tip-bg); color: var(--tip-ink);
+  font: 12px/1.45 var(--f-mono); padding: 8px 10px; border-radius: 6px; max-width: 260px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+/* Findings */
+.findings { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+.finding { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding-block: 18px; border-bottom: 1px solid var(--rule); }
+@media (min-width: 760px) { .finding { grid-template-columns: 260px minmax(0, 1fr); gap: 24px; } }
+.finding h4 { margin: 0; font: 600 15px/1.35 var(--f-body); }
+.finding p { color: var(--ink-2); font-size: 14.5px; }
+.finding .ev { font: 12.5px/1.5 var(--f-mono); color: var(--ink-3); margin-top: 6px; }
+
+.callout { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--rule-strong); border-radius: 10px; font-size: 14px; color: var(--ink-2); background: var(--surface); }
+.callout strong { color: var(--ink); }
+
+footer { padding-block: 40px 56px; margin-top: 40px; border-top: 1px solid var(--rule); }
+footer ol { margin: 10px 0 0; padding-left: 20px; font-size: 13.5px; color: var(--ink-2); display: grid; gap: 6px; }
+footer .note { font-size: 13px; color: var(--ink-3); margin-top: 16px; }
+
+
+
+/* ===== Tabs layout ===== */
+header.top { padding-block: 28px 18px; border-bottom: 0; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 28px; align-items: center; }
+@media (max-width: 760px) { .hero { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
+.hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1; margin-top: 10px; letter-spacing: -0.02em; }
+.hero-art { width: 100%; height: 120px; display: block; }
+.hero-grid line { stroke: var(--rule); stroke-width: 1; }
+.hero-smooth { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.hero-stair { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-stair { stroke-dasharray: 2400; stroke-dashoffset: 0; animation: draw 1.6s ease-out both; }
+  @keyframes draw { from { stroke-dashoffset: 2400; } to { stroke-dashoffset: 0; } }
+}
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; background: var(--bg); border-bottom: 1px solid var(--rule); }
+.tablist { display: flex; gap: 6px; overflow-x: auto; padding-block: 10px 8px; scrollbar-width: none; }
+.tablist::-webkit-scrollbar { display: none; }
+.tab {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  font: 500 14px/1 var(--f-body); color: var(--ink-2); background: transparent;
+  border: 1px solid transparent; border-radius: 999px; padding: 7px 14px 7px 7px;
+}
+.tab:hover { background: var(--accent-soft); color: var(--ink); }
+.tab-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font: 600 12px/1 var(--f-mono); border: 1px solid var(--rule-strong); color: var(--ink-3); background: var(--surface); }
+.tab.seen .tab-n { border-color: var(--accent); color: var(--accent); }
+.tab[aria-selected="true"] { background: var(--surface); border-color: var(--rule-strong); color: var(--ink); }
+.tab[aria-selected="true"] .tab-n { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.tab:focus-visible, .subtab:focus-visible, .q-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.progress { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; }
+.progress::before { content: ""; }
+.progress-bar { height: 3px; border-radius: 3px; background: var(--accent); width: 14%; transition: width .3s; flex: none; max-width: 70%; }
+.progress-t { font: 11.5px/1 var(--f-mono); color: var(--ink-3); white-space: nowrap; }
+
+.panel { padding-block: 28px 8px; }
+@media (prefers-reduced-motion: no-preference) { .panel.enter { animation: rise .28s ease-out; } @keyframes rise { from { transform: translateY(8px); } to { transform: none; } } }
+.panel-head { display: grid; gap: 8px; padding-bottom: 6px; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.panel-title { font-size: clamp(30px, 4.6vw, 44px); line-height: 1.05; font-weight: 700; }
+.panel-lede { font-size: 17px; color: var(--ink-2); max-width: 64ch; }
+.panel section.block { padding-block: 26px 8px; scroll-margin-top: 110px; }
+.g-group, .finding, h3 { scroll-margin-top: 110px; }
+
+.subtabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 18px; }
+.subtab { text-align: left; cursor: pointer; display: grid; gap: 4px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); }
+.subtab:hover { border-color: var(--rule-strong); }
+.subtab[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.subtab-name { font: 600 15px/1.2 var(--f-body); }
+.subtab-meta { font: 12px/1.3 var(--f-mono); color: var(--ink-3); }
+
+.notice { margin: 4px 0 6px; padding: 14px 16px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--rule); }
+.notice-k { font: 600 11.5px/1 var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.notice ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14.5px; color: var(--ink); }
+
+.start-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 16px; margin-top: 22px; align-items: start; }
+@media (max-width: 860px) { .start-grid { grid-template-columns: minmax(0, 1fr); } }
+.keyidea { padding: 18px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); }
+.ideas { margin: 0; padding-left: 20px; display: grid; gap: 12px; font-size: 14.5px; color: var(--ink-2); }
+.ideas strong { color: var(--ink); }
+.explorer, .quiz { padding: 18px; border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--surface); min-width: 0; }
+.ex-title { margin: 0; font-size: 19px; font-weight: 700; font-family: var(--f-display); }
+.ex-sub { font-size: 13.5px; color: var(--ink-2); margin-top: 6px; }
+.ex-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 14px; font-size: 14px; }
+.ex-controls label { display: inline-flex; align-items: center; gap: 8px; }
+.ex-controls output { display: inline-grid; place-items: center; min-width: 28px; height: 24px; border-radius: 6px; background: var(--accent); color: var(--surface); font: 600 13px/1 var(--f-mono); }
+.ex-controls input[type=range] { flex: 1 1 160px; accent-color: var(--accent); min-width: 0; }
+.ex-controls input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+.ex-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
+.ex-stat { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--rule); }
+.ex-stat b { display: block; font: 600 18px/1.2 var(--f-mono); font-variant-numeric: tabular-nums; }
+.ex-stat span { font-size: 12px; color: var(--ink-3); }
+.ex-note { margin-top: 10px; font-size: 14px; color: var(--ink-2); min-height: 2.8em; }
+
+.path-h { margin-top: 34px; }
+.path { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 12px; }
+.path-card { display: grid; gap: 6px; align-content: start; padding: 14px; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); text-decoration: none; color: var(--ink); }
+.path-card:hover { border-color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .path-card { transition: transform .15s, border-color .15s; } .path-card:hover { transform: translateY(-2px); } }
+.path-n { font: 700 26px/1 var(--f-display); color: var(--accent); }
+.path-t { font: 600 15px/1.2 var(--f-body); }
+.path-d { font-size: 13px; color: var(--ink-3); }
+
+.panel-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.pn { display: grid; gap: 4px; text-decoration: none; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); min-width: 0; }
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-k { font: 11px/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.pn-t { font: 600 16px/1.2 var(--f-body); color: var(--ink); }
+
+.quiz { margin-top: 28px; }
+.q { padding-block: 16px; border-bottom: 1px solid var(--rule); }
+.q:last-child { border-bottom: 0; }
+.q-text { font: 600 15px/1.4 var(--f-body); }
+.q-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 10px; }
+.q-opt { text-align: left; cursor: pointer; font: 14px/1.35 var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--rule-strong); border-radius: 8px; padding: 10px 12px; }
+.q-opt:hover:not(:disabled) { border-color: var(--accent); }
+.q-opt:disabled { cursor: default; }
+.q-opt.right { border-color: var(--good); color: var(--good-ink); font-weight: 600; }
+.q-opt.wrong { border-color: var(--crit); color: var(--crit-ink); text-decoration: line-through; }
+.q-fb { margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+.q-fb b { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 6px; }
+.q-fb b.ok { color: var(--good-ink); } .q-fb b.no { color: var(--crit-ink); }
+.quiz-score { margin-top: 12px; font: 13px/1.4 var(--f-mono); color: var(--ink-3); }
+
+/* Citations */
+.cite { margin-top: 8px; font: 12px/1.5 var(--f-mono); color: var(--ink-3); }
+.cite a { color: var(--ink-2); }
+.figure .cite { margin-top: 6px; }
+.part { padding-block: 56px 0; }
+.part .kicker { color: var(--accent); }
+.part h2.part-title { font-size: clamp(28px, 4.2vw, 40px); margin-top: 8px; }
+.part p.part-lede { margin-top: 10px; color: var(--ink-2); font-size: 16px; }
+.st { display: inline-block; font: 500 11px/1 var(--f-mono); padding: 3px 6px; border-radius: 4px; letter-spacing: 0.03em; white-space: nowrap; }
+.st.yes { color: var(--good-ink); border: 1px solid var(--good); }
+.st.part { color: var(--ink); border: 1px dashed var(--ink-3); }
+.st.alt { color: var(--ink-2); border: 1px solid var(--rule-strong); }
+.st.na { color: var(--ink-3); border: 1px dotted var(--rule-strong); }
+td.mx { white-space: normal; min-width: 150px; vertical-align: top; }
+td.mx .mx-note { display: block; font-size: 12px; color: var(--ink-2); margin-top: 4px; line-height: 1.4; }
+td.wrap, th.wrap { white-space: normal; min-width: 180px; vertical-align: top; }
+.sym { font-family: var(--f-mono); }
+.sym.y { color: var(--good-ink); } .sym.n { color: var(--ink-3); } .sym.p { color: var(--ink); }
+.key { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12.5px; color: var(--ink-2); margin: 10px 0 0; }
+.verify { display: grid; gap: 10px; }
+.verify li { color: var(--ink-2); font-size: 14px; }
+.g-ref { display: inline-block; margin-top: 4px; font: 12px/1.4 var(--f-mono); }
+
+/* Glossary */
+.g-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+.g-tools input {
+  flex: 1 1 260px; min-width: 0; font: 15px/1.3 var(--f-body); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule-strong); border-radius: 8px; padding: 10px 12px;
+}
+.g-tools input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.g-count { font: 12.5px/1 var(--f-mono); color: var(--ink-3); }
+.g-jump { display: flex; flex-wrap: wrap; gap: 6px; }
+.g-jump a { font: 500 12px/1 var(--f-mono); text-decoration: none; color: var(--ink-2); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 10px; }
+.g-jump a:hover { border-color: var(--accent); color: var(--ink); }
+.g-group { margin-top: 26px; scroll-margin-top: 64px; }
+.g-group h3 { margin: 0 0 4px; }
+.g-group .g-intro { font-size: 13.5px; color: var(--ink-3); margin-bottom: 10px; }
+.g-list { border-top: 1px solid var(--rule); }
+.g-item { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding-block: 13px; border-bottom: 1px solid var(--rule); }
+@media (min-width: 760px) { .g-item { grid-template-columns: 230px minmax(0, 1fr); gap: 24px; } }
+.g-term { font: 600 14.5px/1.35 var(--f-body); }
+.g-term .alias { display: block; font: 400 12px/1.4 var(--f-mono); color: var(--ink-3); margin-top: 2px; }
+.g-def { font-size: 14.5px; color: var(--ink-2); max-width: 74ch; }
+.g-def .here { display: block; margin-top: 5px; font: 12.5px/1.5 var(--f-mono); color: var(--ink-3); }
+.g-def code { font: 13px var(--f-mono); color: var(--ink); background: var(--accent-soft); padding: 1px 4px; border-radius: 3px; }
+.g-empty { padding: 18px 0; color: var(--ink-3); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .figure circle, .figure rect { transition: opacity .15s; }
+}
+</style>
+
+<header class="top">
+  <div class="wrap hero">
+    <div class="hero-text">
+      <div class="kicker">A field guide to LLM quantization · 5 models · 6 engines · 9 toolkits</div>
+      <h1>Quantization Ledger</h1>
+      <p class="lede">What you gain and what you lose when you shrink a model: accuracy, VRAM, speed and drift, measured on real models and real engines. Every number links to its source.</p>
+    </div>
+    <svg class="hero-art" viewBox="0 0 600 120" aria-hidden="true" preserveAspectRatio="none"><g class="hero-grid"><line x1="0" x2="600" y1="104.0" y2="104.0"/><line x1="0" x2="600" y1="91.4" y2="91.4"/><line x1="0" x2="600" y1="78.9" y2="78.9"/><line x1="0" x2="600" y1="66.3" y2="66.3"/><line x1="0" x2="600" y1="53.7" y2="53.7"/><line x1="0" x2="600" y1="41.1" y2="41.1"/><line x1="0" x2="600" y1="28.6" y2="28.6"/><line x1="0" x2="600" y1="16.0" y2="16.0"/></g><path class="hero-smooth" d="M0.0,60.0 L12.5,52.0 L25.0,44.4 L37.5,37.7 L50.0,32.2 L62.5,28.1 L75.0,25.6 L87.5,24.5 L100.0,24.7 L112.5,25.9 L125.0,27.9 L137.5,30.3 L150.0,32.7 L162.5,35.0 L175.0,36.9 L187.5,38.5 L200.0,39.7 L212.5,40.8 L225.0,42.0 L237.5,43.4 L250.0,45.5 L262.5,48.5 L275.0,52.3 L287.5,57.2 L300.0,63.0 L312.5,69.6 L325.0,76.5 L337.5,83.4 L350.0,89.9 L362.5,95.5 L375.0,99.8 L387.5,102.7 L400.0,103.8 L412.5,103.1 L425.0,100.8 L437.5,97.0 L450.0,92.1 L462.5,86.4 L475.0,80.5 L487.5,74.6 L500.0,69.1 L512.5,64.3 L525.0,60.2 L537.5,57.0 L550.0,54.4 L562.5,52.3 L575.0,50.4 L587.5,48.5 L600.0,46.4"/><path class="hero-stair" d="M0,53.7 H12.5 V53.7 H25.0 V41.1 H37.5 V41.1 H50.0 V28.6 H62.5 V28.6 H75.0 V28.6 H87.5 V28.6 H100.0 V28.6 H112.5 V28.6 H125.0 V28.6 H137.5 V28.6 H150.0 V28.6 H162.5 V41.1 H175.0 V41.1 H187.5 V41.1 H200.0 V41.1 H212.5 V41.1 H225.0 V41.1 H237.5 V41.1 H250.0 V41.1 H262.5 V53.7 H275.0 V53.7 H287.5 V53.7 H300.0 V66.3 H312.5 V66.3 H325.0 V78.9 H337.5 V78.9 H350.0 V91.4 H362.5 V91.4 H375.0 V104.0 H387.5 V104.0 H400.0 V104.0 H412.5 V104.0 H425.0 V104.0 H437.5 V91.4 H450.0 V91.4 H462.5 V91.4 H475.0 V78.9 H487.5 V78.9 H500.0 V66.3 H512.5 V66.3 H525.0 V66.3 H537.5 V53.7 H550.0 V53.7 H562.5 V53.7 H575.0 V53.7 H587.5 V53.7 H600.0 V41.1"/></svg>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Chapters">
+  <div class="wrap">
+    <div class="tablist" role="tablist">
+      <button type="button" role="tab" class="tab" id="tab-start" data-panel="start" aria-controls="start" aria-selected="true"><span class="tab-n">1</span><span class="tab-name">Start here</span></button><button type="button" role="tab" class="tab" id="tab-models" data-panel="models" aria-controls="models" aria-selected="false"><span class="tab-n">2</span><span class="tab-name">Models</span></button><button type="button" role="tab" class="tab" id="tab-engines" data-panel="engines" aria-controls="engines" aria-selected="false"><span class="tab-n">3</span><span class="tab-name">Engines</span></button><button type="button" role="tab" class="tab" id="tab-tools" data-panel="tools" aria-controls="tools" aria-selected="false"><span class="tab-n">4</span><span class="tab-name">Toolkits</span></button><button type="button" role="tab" class="tab" id="tab-findings" data-panel="findings" aria-controls="findings" aria-selected="false"><span class="tab-n">5</span><span class="tab-name">Findings</span></button><button type="button" role="tab" class="tab" id="tab-glossary" data-panel="glossary" aria-controls="glossary" aria-selected="false"><span class="tab-n">6</span><span class="tab-name">Glossary</span></button><button type="button" role="tab" class="tab" id="tab-sources" data-panel="sources" aria-controls="sources" aria-selected="false"><span class="tab-n">7</span><span class="tab-name">Sources</span></button>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div><span class="progress-t" id="progress-t">1 of 7 chapters opened</span></div>
+  </div>
+</nav>
+
+<main class="wrap">
+<div class="panel" id="start" role="tabpanel" aria-labelledby="tab-start">
+  <div class="panel-head">
+    <div class="eyebrow">Step 1 of 7</div>
+    <h2 class="panel-title">Start here</h2>
+    <p class="panel-lede">Quantization stores a model's weights with fewer bits. That shrinks memory and speeds up generation, but every rounding step moves the model a little away from the original. This guide shows how far, on real models and real engines.</p>
+  </div>
+
+  <div class="start-grid">
+    <div class="keyidea">
+      <div class="notice-k">Three ideas to carry through every tab</div>
+      <ol class="ideas">
+        <li><strong>Bits are a budget.</strong> Fewer bits per weight means less VRAM and faster decoding, because generating each token reads every weight once.</li>
+        <li><strong>Rounding error is uneven.</strong> Most weights survive; a few sensitive ones do not. Good methods spend their bits where the error hurts.</li>
+        <li><strong>The benchmark decides what you see.</strong> Multiple-choice scores barely move at 4 bits; free-form generation and strict output formats show the damage first.</li>
+      </ol>
+    </div>
+    
+  <div class="explorer" id="explorer">
+    <div class="ex-head">
+      <div>
+        <div class="notice-k">Try it: round some weights</div>
+        <h3 class="ex-title">What “4-bit” actually does to a weight</h3>
+        <p class="ex-sub">48 synthetic weights, rounded to the nearest of 2<sup>bits</sup> evenly spaced levels between their min and max. This is plain round-to-nearest, the simplest method on this page.</p>
+      </div>
+    </div>
+    <div class="ex-controls">
+      <label for="ex-bits">Bits <output id="ex-bits-out">3</output></label>
+      <input type="range" id="ex-bits" min="2" max="8" step="1" value="3">
+      <label class="ex-check"><input type="checkbox" id="ex-outlier"> Add one outlier weight</label>
+    </div>
+    <div class="chart" id="c-explorer"></div>
+    <div class="ex-stats" id="ex-stats"></div>
+    <p class="ex-note" id="ex-note"></p>
+    <div class="cite">Rounding rule: <a href="https://arxiv.org/html/2404.14047#S2.E1" target="_blank" rel="noopener">uniform quantization, Eq. 1 in Huang et al.</a> · weights are synthetic, for illustration only</div>
+  </div>
+
+  </div>
+  <h3 class="path-h">Your route through the guide</h3>
+  <div class="path"><a class="path-card" href="#models"><span class="path-n">2</span><span class="path-t">Models</span><span class="path-d">Five real models, every format measured</span></a><a class="path-card" href="#engines"><span class="path-n">3</span><span class="path-t">Engines</span><span class="path-d">Who runs which format, and how fast</span></a><a class="path-card" href="#tools"><span class="path-n">4</span><span class="path-t">Toolkits</span><span class="path-d">What makes quantized checkpoints</span></a><a class="path-card" href="#findings"><span class="path-n">5</span><span class="path-t">Findings</span><span class="path-d">Patterns across sources, plus a self-check</span></a><a class="path-card" href="#glossary"><span class="path-n">6</span><span class="path-t">Glossary</span><span class="path-d">81 terms, each with a reference</span></a><a class="path-card" href="#sources"><span class="path-n">7</span><span class="path-t">Sources</span><span class="path-d">How every number was checked</span></a></div>
+  <section class="block" id="glance">
+  <div class="sec-head">
+    <h2>Five models at a glance</h2>
+    <p>Each study measured different things on different hardware, so compare within a column, not across. The headline per model is the best 4-bit option against its own full-precision baseline.</p>
+  </div>
+  <div class="glance" id="glance-grid"></div>
+</section>
+  <div class="panel-nav"><span></span><a class="pn next" href="#models"><span class="pn-k">Next</span><span class="pn-t">Models →</span></a></div>
+</div>
+<div class="panel" id="models" role="tabpanel" aria-labelledby="tab-models" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 2 of 7</div>
+    <h2 class="panel-title">Models</h2>
+    <p class="panel-lede">Pick a model. Each one comes from a different study, so compare formats within a model, not across models.</p>
+  </div>
+
+  <div class="subtabs" role="tablist" aria-label="models"><button type="button" role="tab" class="subtab" data-group="models" data-target="qwen" aria-selected="true"><span class="subtab-name">Qwen3.5-9B</span><span class="subtab-meta">vLLM + GGUF · GSM8K</span></button><button type="button" role="tab" class="subtab" data-group="models" data-target="llama2" aria-selected="false"><span class="subtab-name">Llama-2-13B</span><span class="subtab-meta">13 formats · VRAM vs PPL</span></button><button type="button" role="tab" class="subtab" data-group="models" data-target="llama3" aria-selected="false"><span class="subtab-name">LLaMA3-8B</span><span class="subtab-meta">2–8 bit · 10 methods</span></button><button type="button" role="tab" class="subtab" data-group="models" data-target="llava" aria-selected="false"><span class="subtab-name">LLaVA-Next-8B</span><span class="subtab-meta">Vision-language · DocVQA</span></button><button type="button" role="tab" class="subtab" data-group="models" data-target="gemma" aria-selected="false"><span class="subtab-name">Gemma 3 27B</span><span class="subtab-meta">Unsloth GGUF · MMLU</span></button></div>
+  <section class="block sub" id="qwen">
+  <div class="sec-head">
+    <h2>Qwen3.5-9B</h2>
+    <div class="src">Source: <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/" target="_blank" rel="noopener">computingforgeeks</a> · vLLM 0.30.0, llm-compressor 0.14.0, llama.cpp (29 Sep 2026) · NVIDIA A10G 24GB</div>
+    <p>All checkpoints were quantized from the same BF16 weights on one box. GSM8K is lm-eval-harness, 5-shot, greedy, all 1,319 questions. KL divergence is per-token against BF16 logits on wikitext-2 (150 × 512 tokens). vLLM and llama.cpp speeds come from different benchmark tools, so compare speed only within each table.</p>
+  </div>
+  <div class="notice"><div class="notice-k">What to notice</div><ul><li>FP8 matched BF16 exactly on GSM8K (87.5%) and was 1.76× faster.</li><li>Both 4-bit vLLM formats lost 6 to 12 GSM8K points; GGUF IQ4_XS lost about 1.</li><li>Perplexity barely moves even where KL divergence and top-1 agreement show real drift.</li></ul></div>
+
+  <h3>vLLM formats</h3>
+  <div class="h3-note">Shared flags: --max-num-seqs 32, --max-model-len 4096, --gpu-memory-utilization 0.90. Throughput = 200 requests at 1,024 in / 128 out.</div>
+  <div class="tbl-wrap"><table id="t-qwen-vllm"></table></div>
+  <div class="cite">Source: <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#gguf-vs-awq-vs-gptq-vs-fp8-results-at-a-glance" target="_blank" rel="noopener">computingforgeeks, “results at a glance” table</a> · Retained = derived (strict ÷ BF16 strict)</div>
+
+  <h3>GGUF ladder (llama.cpp, imatrix)</h3>
+  <div class="h3-note">Generation speed from llama-bench tg128, all layers on GPU. “Top-1 agree” is the share of tokens where the quant picks the same next token as BF16.</div>
+  <div class="tbl-wrap"><table id="t-qwen-gguf"></table></div>
+  <div class="cite">Source: <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#gguf-quantization-quality-from-q8_0-to-q2_k" target="_blank" rel="noopener">computingforgeeks, “GGUF quantization quality” and GGUF results tables</a></div>
+
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">GSM8K strict-match by format</div>
+      <div class="f-sub">% of 1,319 problems · dashed line = BF16 (87.5%)</div>
+      <div class="chart" id="c-qwen-gsm"></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>vLLM</span><span><i style="background:var(--s2)"></i>llama.cpp GGUF</span><span><i class="dash"></i>BF16 baseline</span></div>
+      <div class="cite">Source: <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#gguf-vs-awq-vs-gptq-vs-fp8-results-at-a-glance" target="_blank" rel="noopener">computingforgeeks</a></div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Mean KL divergence vs file size</div>
+      <div class="f-sub">GGUF quants · lower is closer to BF16 · log scale</div>
+      <div class="chart" id="c-qwen-kld"></div>
+      <div class="cite">Source: <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#gguf-quantization-quality-from-q8_0-to-q2_k" target="_blank" rel="noopener">computingforgeeks, GGUF quality table</a></div>
+    </div>
+  </div>
+</section>
+  <section class="block sub" hidden id="llama2">
+  <div class="sec-head">
+    <h2>Llama-2-13B</h2>
+    <div class="src">Source: <a href="https://oobabooga.github.io/blog/posts/gptq-awq-exl2-llamacpp/" target="_blank" rel="noopener">oobabooga blog</a> · RTX 3090, CUDA 12.1 · AutoAWQ 0.1.4, bitsandbytes 0.41.1, ExLlama 0.0.18, ExLlamaV2 0.0.6, llama-cpp-python 0.2.11</div>
+    <p>Every row is about 4 bits per weight. Perplexity is wikitext at 4,096 context, stride 512. VRAM was measured with context 1 so cache preallocation does not count. Speed is a 3,200-token prompt followed by 800 generated tokens. The llama.cpp numbers predate a later speedup PR, and GPTQ was measured through ExLlama v1.</p>
+  </div>
+  <div class="notice"><div class="notice-k">What to notice</div><ul><li>All 13 configs sit within 1.6% perplexity of each other.</li><li>The real spread is VRAM (7.9–10.6 GB) and decode speed (23–57 tok/s).</li><li>Read the Pareto chart: anything off the blue line is beaten on both axes.</li></ul></div>
+
+  <div class="chart-grid">
+    <div class="figure" style="grid-column: 1 / -1;">
+      <div class="f-title">Perplexity vs VRAM, with the Pareto frontier</div>
+      <div class="f-sub">Lower-left is better. Highlighted points are not beaten on both axes by any other config.</div>
+      <div class="chart" id="c-l2-pareto"></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>On the frontier</span><span><i style="background:var(--ink-3)"></i>Dominated</span></div>
+      <div class="cite">Source: <a href="https://oobabooga.github.io/blog/posts/gptq-awq-exl2-llamacpp/#the-results" target="_blank" rel="noopener">oobabooga, results table</a> · frontier recomputed here from the same data; it matches the post’s Pareto discussion</div>
+    </div>
+  </div>
+
+  <h3>All 13 configurations</h3>
+  <div class="h3-note">Sorted by perplexity. Disk size for load_in_4bit is the FP16 checkpoint it quantizes at load time.</div>
+  <div class="tbl-wrap"><table id="t-l2"></table></div>
+  <div class="cite">Source: <a href="https://oobabooga.github.io/blog/posts/gptq-awq-exl2-llamacpp/#the-results" target="_blank" rel="noopener">oobabooga, results table</a> (VRAM and size published in MB; shown here ÷1000)</div>
+</section>
+  <section class="block sub" hidden id="llama3">
+  <div class="sec-head">
+    <h2>LLaMA3-8B</h2>
+    <div class="src">Source: <a href="https://arxiv.org/html/2404.14047" target="_blank" rel="noopener">Huang et al., arXiv 2404.14047</a> · <a href="https://github.com/Macaronlin/LLaMA3-Quantization" target="_blank" rel="noopener">Macaronlin/LLaMA3-Quantization</a></div>
+    <p>Research PTQ methods across 2 to 8 bits. Calibration is 128 WikiText2 samples at 2,048 tokens; grouped methods use group size 128. Accuracy is the zero-shot average of PIQA, ARC-e, ARC-c, HellaSwag and Winogrande. This study does not report inference VRAM.</p>
+  </div>
+  <div class="notice"><div class="notice-k">What to notice</div><ul><li>Calibrated 4-bit methods keep about 98–99% of the FP16 average.</li><li>Plain rounding (RTN) collapses at 3 bits; GPTQ, AWQ, SliM-LLM and QuIP hold up.</li><li>At 2 bits almost everything falls to chance.</li></ul></div>
+
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">Zero-shot average vs weight bits</div>
+      <div class="f-sub">5-task CommonsenseQA average · dashed line = FP16 (68.6)</div>
+      <div class="chart" id="c-l3-bits"></div>
+      <div class="legend" id="lg-l3"></div>
+      <div class="cite">Source: <a href="https://arxiv.org/html/2404.14047#S2.T3" target="_blank" rel="noopener">Huang et al., Table 3</a></div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Cost of producing a 4-bit model</div>
+      <div class="f-sub">GPU memory and wall time to quantize LLaMA3-8B, plus decode speed of the result</div>
+      <div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-l3-cost"></table></div>
+      <div class="cite">Source: <a href="https://arxiv.org/html/2404.14047#S2.T6" target="_blank" rel="noopener">Huang et al., Table 6</a></div>
+    </div>
+  </div>
+
+  <h3>Method × bit-width</h3>
+  <div class="h3-note">Cell shading shows accuracy retained vs FP16. “Collapsed” marks perplexity above 100 or accuracy near chance.</div>
+  <div class="tbl-wrap"><table id="t-l3"></table></div>
+  <div class="cite">Source: <a href="https://arxiv.org/html/2404.14047#S2.T1" target="_blank" rel="noopener">Huang et al., Table 1</a> (perplexity) and <a href="https://arxiv.org/html/2404.14047#S2.T3" target="_blank" rel="noopener">Table 3</a> (accuracy) · Retained derived</div>
+</section>
+  <section class="block sub" hidden id="llava">
+  <div class="sec-head">
+    <h2>LLaVA-Next-8B</h2>
+    <div class="src">Source: <a href="https://arxiv.org/html/2404.14047#S4" target="_blank" rel="noopener">same study, Track 3</a> · only the LLaMA3 language backbone is quantized; the vision encoder stays FP16</div>
+    <p>This is the closest public data point to document-VQA workloads. Each cell is the score and the share of the FP16 score it keeps.</p>
+  </div>
+  <div class="notice"><div class="notice-k">What to notice</div><ul><li>DocVQA keeps 98–99% at 4 bits with every method.</li><li>MME-Cognition is the most fragile score, losing 9–19% even at 4 bits.</li><li>At 2 bits, GPTQ, AWQ and RTN produce no valid output.</li></ul></div>
+  <div class="tbl-wrap"><table id="t-llava"></table></div>
+  <div class="cite">Source: <a href="https://arxiv.org/html/2404.14047#S4.T12" target="_blank" rel="noopener">Huang et al., Table 12</a> · % of FP16 derived</div>
+  <div class="callout"><strong>Read for document work:</strong> at 4 bits, DocVQA keeps 98–99% with every method. MME-Cognition is the most fragile column, losing 9 to 19% even at 4 bits. At 2 bits, GPTQ, AWQ and RTN all collapse to empty or garbage output on every benchmark; only SliM-LLM produces answers.</div>
+</section>
+  <section class="block sub" hidden id="gemma">
+  <div class="sec-head">
+    <h2>Gemma 3 27B (Unsloth Dynamic GGUF)</h2>
+    <div class="src">Source: <a href="https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs" target="_blank" rel="noopener">Unsloth docs, Dynamic GGUFs</a> · vendor-published results for its own quants</div>
+    <p>Unsloth's Dynamic quants pick a per-layer bit mix and use a larger imatrix calibration set. They quantized both the BF16 checkpoint and Google's QAT checkpoint across the full llama.cpp ladder and scored 5-shot MMLU. BF16 MMLU is 71.5. Their newer Dynamic 3.0 results for Qwen3.8-27B are published only as images, so they are not tabulated here.</p>
+  </div>
+  <div class="notice"><div class="notice-k">What to notice</div><ul><li>MMLU is flat down to 3-bit and still 96% at Q2_K_XL.</li><li>Below 2 bits, accuracy falls fast.</li><li>Unsloth's Dynamic quants cut KL divergence 3–9% for 1–3% more disk.</li></ul></div>
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">5-shot MMLU vs disk size</div>
+      <div class="f-sub">Each point is one quant level · dashed line = BF16 (71.5)</div>
+      <div class="chart" id="c-gemma"></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>Dynamic, from BF16</span><span><i style="background:var(--s2)"></i>Dynamic, from QAT</span><span><i style="background:var(--s3)"></i>Google QAT</span><span><i class="dash"></i>BF16</span></div>
+      <div class="cite">Source: <a href="https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs" target="_blank" rel="noopener">Unsloth Dynamic GGUF docs</a>, Gemma 3 27B MMLU table; BF16 71.5 from the Gemma 3 QAT table</div>
+    </div>
+    <div class="figure">
+      <div class="f-title">KL divergence: standard imatrix vs Dynamic</div>
+      <div class="f-sub">Same quant names; Dynamic files are slightly larger</div>
+      <div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-gemma-kld"></table></div>
+      <div class="cite">Source: <a href="https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs" target="_blank" rel="noopener">Unsloth docs</a>, Gemma 3 KLD table · % changes derived</div>
+    </div>
+  </div>
+  <h3>Full ladder</h3>
+  <div class="h3-note">Retained = share of BF16 MMLU (71.5). Q4_K_M on the BF16 checkpoint already keeps 99.6%.</div>
+  <div class="tbl-wrap"><table id="t-gemma"></table></div>
+  <div class="cite">Source: <a href="https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs" target="_blank" rel="noopener">Unsloth docs</a> · Retained derived</div>
+  <div class="callout"><strong>Read with care:</strong> these are vendor numbers for vendor quants, and MMLU is a likelihood-scored multiple-choice test. The KLD gains over plain imatrix are real but modest (3–9% lower KLD at about 1–3% more disk). The bigger signal is model size: a 27B model at Q2_K_XL still keeps 96% of MMLU, while 2-bit generic PTQ collapses LLaMA3-8B.</div>
+</section>
+  <div class="panel-nav"><a class="pn prev" href="#start"><span class="pn-k">Previous</span><span class="pn-t">← Start here</span></a><a class="pn next" href="#engines"><span class="pn-k">Next</span><span class="pn-t">Engines →</span></a></div>
+</div>
+<div class="panel" id="engines" role="tabpanel" aria-labelledby="tab-engines" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 3 of 7</div>
+    <h2 class="panel-title">Engines</h2>
+    <p class="panel-lede">A format only helps if your serving engine has a fast kernel for it on your GPU. Start with the support table, then see how engines compare under load.</p>
+  </div>
+
+  <div class="subtabs" role="tablist" aria-label="engines"><button type="button" role="tab" class="subtab" data-group="engines" data-target="engine-matrix" aria-selected="true"><span class="subtab-name">Who runs what</span><span class="subtab-meta">Formats × engines × GPUs</span></button><button type="button" role="tab" class="subtab" data-group="engines" data-target="engine-bench" aria-selected="false"><span class="subtab-name">Benchmarks</span><span class="subtab-meta">Same model, different engines</span></button><button type="button" role="tab" class="subtab" data-group="engines" data-target="formats-cost" aria-selected="false"><span class="subtab-name">Format vs cost</span><span class="subtab-meta">Accuracy kept vs GPUs saved</span></button></div>
+  <section class="block sub" id="engine-matrix">
+  <div class="sec-head">
+    <h2>Serving engines: who runs which format</h2>
+    <p>Built from each engine's own quantization docs as published on 16 Oct 2026. “Not listed” means the cited page does not mention it, which is not proof of absence. Hover a cell's note for the hardware scope the docs give.</p>
+  </div>
+  <div class="tbl-wrap"><table id="t-matrix"></table></div>
+  <div class="key">
+    <span><span class="st yes">Supported</span> documented on the cited page</span>
+    <span><span class="st part">Partial</span> limited hardware or a fallback path</span>
+    <span><span class="st alt">Own format</span> uses a different scheme for the same goal</span>
+    <span><span class="st na">Not listed</span> absent from the cited page</span>
+  </div>
+  <div class="cite">Sources: <a href="https://docs.vllm.ai/en/latest/features/quantization/" target="_blank" rel="noopener">vLLM quantization + hardware table</a> · <a href="https://docs.sglang.io/docs/advanced_features/quantization" target="_blank" rel="noopener">SGLang quantization</a> · <a href="https://nvidia.github.io/TensorRT-LLM/features/quantization.html" target="_blank" rel="noopener">TensorRT-LLM quantization</a> · <a href="https://lmdeploy.readthedocs.io/en/latest/quantization/w4a16.html" target="_blank" rel="noopener">LMDeploy W4A16</a> · <a href="https://huggingface.co/docs/transformers/main/en/quantization/overview" target="_blank" rel="noopener">Transformers quantization overview</a> (GGUF row for llama.cpp)</div>
+
+  <div class="callout"><strong>Directly relevant to Qwen2.5-VL work:</strong> SGLang's own docs report that quantized Qwen2.5-VL-7B accuracy varies by format, with the auto_gptq variant at near-zero accuracy and the GPTQ format failing outright. Test the exact checkpoint and engine pair before trusting a VLM quant. <a href="https://docs.sglang.io/docs/advanced_features/quantization" target="_blank" rel="noopener">SGLang docs</a></div>
+
+</section>
+  <section class="block sub" hidden id="engine-bench">
+  <div class="sec-head">
+    <h2>Engine benchmarks</h2>
+    <p>The same model served by different engines. Two tests: a 4-bit model on consumer GPUs, and an FP8 70B model on an H100.</p>
+  </div>
+  <h3>Same 4-bit model, three engines, three GPUs</h3>
+  <div class="h3-note">Qwen3.8-27B, prompt 474 tokens, 256 output tokens, temperature 0, Oct 2026. vLLM ran a W4A16 INT4 checkpoint (19.5 GB); llama.cpp and Ollama ran Unsloth/Ollama Q4_K_M GGUFs (16.5–17 GB). The weights differ, so this compares engine plus format, not engine alone.</div>
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">Aggregate throughput at 32 concurrent requests</div>
+      <div class="f-sub">Output tok/s · Ollama with speculative draft off</div>
+      <div class="chart" id="c-eng32"></div>
+      <div class="legend"><span><i style="background:var(--s1)"></i>vLLM 0.31.0</span><span><i style="background:var(--s2)"></i>llama.cpp v0.6.0</span><span><i style="background:var(--s3)"></i>Ollama 0.35.1</span></div>
+      <div class="cite">Source: <a href="https://computingforgeeks.com/ollama-vs-vllm-vs-llama-cpp/" target="_blank" rel="noopener">computingforgeeks, Ollama vs vLLM vs llama.cpp</a></div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Single stream and time to first token</div>
+      <div class="f-sub">Single-stream median decode, and TTFT under 32 concurrent</div>
+      <div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-eng"></table></div>
+      <div class="cite">Source: <a href="https://computingforgeeks.com/ollama-vs-vllm-vs-llama-cpp/" target="_blank" rel="noopener">computingforgeeks</a> · llama.cpp's TTFT is flattered by prefix caching (about 4 new prompt tokens per request); vLLM's prefix-cache hit rate was 0%.</div>
+    </div>
+  </div>
+
+  <h3>Same FP8 model, three datacenter engines</h3>
+  <div class="h3-note">Llama-3.3-70B-Instruct in FP8 on one H100 SXM5 80GB. vLLM v0.18.0, SGLang v0.5.9, TensorRT-LLM v1.2.0 (with FP8 KV cache). 512 input / 256 output tokens on average, 3-minute runs per level. Measured by a GPU cloud vendor; its numbers are rounded.</div>
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">Output throughput vs concurrency</div>
+      <div class="f-sub">tok/s · TensorRT-LLM leads by 16% at 100 concurrent</div>
+      <div class="chart" id="c-sph"></div>
+      <div class="legend"><span><i class="line" style="background:var(--s1)"></i>vLLM</span><span><i class="line" style="background:var(--s4)"></i>SGLang</span><span><i class="line" style="background:var(--s7)"></i>TensorRT-LLM</span></div>
+      <div class="cite">Source: <a href="https://www.spheron.network/blog/vllm-vs-tensorrt-llm-vs-sglang-benchmarks" target="_blank" rel="noopener">Spheron, vLLM vs TensorRT-LLM vs SGLang</a></div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Latency, memory and startup</div>
+      <div class="f-sub">TTFT p50 / p95 in ms; peak VRAM in GB</div>
+      <div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-sph"></table></div>
+      <div class="cite">Source: <a href="https://www.spheron.network/blog/vllm-vs-tensorrt-llm-vs-sglang-benchmarks" target="_blank" rel="noopener">Spheron</a> · TensorRT-LLM cold start is the engine build; a saved engine reloads in about 90 s.</div>
+    </div>
+  </div>
+  <div class="callout">Two older studies point the same way but publish their numbers mainly as charts, so they are not tabulated here: <a href="https://lmsys.org/blog/2024-07-25-sglang-llama3/" target="_blank" rel="noopener">LMSYS (Jul 2024)</a> reports SGLang up to 3.1× vLLM throughput on Llama-70B, and <a href="https://www.bentoml.com/blog/benchmarking-llm-inference-backends" target="_blank" rel="noopener">BentoML (Jun 2024)</a> found LMDeploy fastest on 4-bit Llama-3-70B with TensorRT-LLM matching its throughput but showing TTFT above 6 s at 100 users. Engine versions have moved a long way since.</div>
+</section>
+  <section class="block sub" hidden id="formats-cost">
+  <div class="sec-head">
+    <h2>Format vs accuracy vs serving cost</h2>
+    <div class="src">Source: <a href="https://arxiv.org/html/2411.02355" target="_blank" rel="noopener">Kurtic et al., “Give Me BF16 or Give Me Death?” arXiv 2411.02355</a> (Neural Magic / Red Hat) · vLLM 0.6.4.post1 · Llama 3.1 Instruct 8B, 70B, 405B</div>
+    <p>The broadest single study pairing accuracy with real serving cost. Recovery % below is computed on this page from the raw scores the paper reports, because a few recovery percentages in the paper's text carry an obvious extra leading digit.</p>
+  </div>
+  <h3>Accuracy kept vs BF16</h3>
+  <div class="h3-note">W8A8-FP = FP8 weights and activations; W8A8-INT = INT8 SmoothQuant-style; W4A16-INT = INT4 weight-only (GPTQ). Arena-Hard is a judged win rate; HumanEval is pass@1; RULER is long-context retrieval.</div>
+  <div class="tbl-wrap"><table id="t-rh-acc"></table></div>
+  <div class="cite">Source: <a href="https://arxiv.org/html/2411.02355" target="_blank" rel="noopener">arXiv 2411.02355</a>, Open LLM Leaderboard V1/V2 and real-world benchmark tables · Recovery derived · 405B RULER not run by the authors</div>
+  <h3>Latency and GPUs needed (synchronous, code completion)</h3>
+  <div class="h3-note">Fewer GPUs at similar or lower latency is where quantization pays off.</div>
+  <div class="tbl-wrap"><table id="t-rh-lat"></table></div>
+  <div class="cite">Source: <a href="https://arxiv.org/html/2411.02355" target="_blank" rel="noopener">arXiv 2411.02355</a>, synchronous deployment table</div>
+</section>
+  <div class="panel-nav"><a class="pn prev" href="#models"><span class="pn-k">Previous</span><span class="pn-t">← Models</span></a><a class="pn next" href="#tools"><span class="pn-k">Next</span><span class="pn-t">Toolkits →</span></a></div>
+</div>
+<div class="panel" id="tools" role="tabpanel" aria-labelledby="tab-tools" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 4 of 7</div>
+    <h2 class="panel-title">Toolkits</h2>
+    <p class="panel-lede">The libraries that turn a full-precision model into a quantized checkpoint, and how Hugging Face Transformers loads them.</p>
+  </div>
+
+  <div class="subtabs" role="tablist" aria-label="tools"><button type="button" role="tab" class="subtab" data-group="tools" data-target="toolkits" aria-selected="true"><span class="subtab-name">Toolkits</span><span class="subtab-meta">What each one produces</span></button><button type="button" role="tab" class="subtab" data-group="tools" data-target="unsloth" aria-selected="false"><span class="subtab-name">Unsloth</span><span class="subtab-meta">Vision quants · fine-tuning memory</span></button><button type="button" role="tab" class="subtab" data-group="tools" data-target="hf" aria-selected="false"><span class="subtab-name">Hugging Face</span><span class="subtab-meta">Compatibility · bnb vs GPTQ</span></button></div>
+  <section class="block sub" id="toolkits">
+  <div class="sec-head">
+    <h2>Quantization toolkits</h2>
+    <p>What each library produces and where its output runs. Rows cite the toolkit's own docs and the engine docs above.</p>
+  </div>
+  <div class="tbl-wrap"><table id="t-tools"></table></div>
+
+</section>
+  <section class="block sub" hidden id="unsloth">
+  <div class="sec-head">
+    <h2>Unsloth deep dive</h2>
+    <p>Unsloth is both a fine-tuning library and a publisher of quantized checkpoints. Its GGUF results for Gemma 3 27B are in the Models tab; here are its 4-bit vision results and fine-tuning memory numbers.</p>
+  </div>
+  <h3>Unsloth: dynamic 4-bit for vision-language models</h3>
+  <div class="h3-note">Standard bitsandbytes 4-bit quantizes every linear layer. Unsloth's dynamic variant leaves a few layers in 16-bit, chosen by measuring weight and activation quantization error (Dec 2024). Output correctness is Unsloth's own judgment on a test image.</div>
+  <div class="tbl-wrap"><table id="t-ud4"></table></div>
+  <div class="cite">Source: <a href="https://unsloth.ai/blog/dynamic-4bit" target="_blank" rel="noopener">Unsloth blog, dynamic 4-bit quantization</a> · “Extra over bnb 4-bit” derived. Note: the post's intro claims under 10% more VRAM than bnb 4-bit, but its own Qwen2-VL-2B numbers are 33% more.</div>
+
+  <h3>Unsloth: QLoRA fine-tuning memory</h3>
+  <div class="chart-grid">
+    <div class="figure">
+      <div class="f-title">Max fine-tuning context, Llama 3.1 8B QLoRA</div>
+      <div class="f-sub">Tokens that fit at each GPU memory size · log scale · rank 32, batch 1, all linear layers</div>
+      <div class="chart" id="c-uctx"></div>
+      <div class="legend"><span><i class="line" style="background:var(--s1)"></i>Unsloth</span><span><i class="line" style="background:var(--s2)"></i>Hugging Face + FlashAttention 2</span></div>
+      <div class="cite">Source: <a href="https://unsloth.ai/docs/basics/unsloth-benchmarks" target="_blank" rel="noopener">Unsloth benchmarks</a> (vendor-published; GPU model not named)</div>
+    </div>
+    <div class="figure">
+      <div class="f-title">Headline claims and the 70B case</div>
+      <div class="f-sub">Alpaca, batch 2, grad-accum 4, LoRA rank 32</div>
+      <div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-ub"></table></div>
+      <div class="cite">Source: <a href="https://unsloth.ai/docs/basics/unsloth-benchmarks" target="_blank" rel="noopener">Unsloth benchmarks</a></div>
+    </div>
+  </div>
+</section>
+  <section class="block sub" hidden id="hf">
+  <div class="sec-head">
+    <h2>Hugging Face Transformers</h2>
+    <p>Transformers is where most quantized checkpoints are loaded for evaluation and PEFT fine-tuning, even when production serving runs on vLLM or SGLang.</p>
+  </div>
+  <h3>Method compatibility matrix</h3>
+  <div class="h3-note">As published in the Transformers quantization overview. ● supported, ◐ partial, ○ not supported, ? unknown on the source page.</div>
+  <div class="tbl-wrap"><table id="t-hfm"></table></div>
+  <div class="cite">Source: <a href="https://huggingface.co/docs/transformers/main/en/quantization/overview" target="_blank" rel="noopener">Transformers quantization overview</a> · the page also links an interactive <a href="https://stevhliu-quantization-picker.hf.space" target="_blank" rel="noopener">quantization picker</a></div>
+
+  <h3>bitsandbytes 4-bit vs GPTQ (Sep 2023)</h3>
+  <div class="h3-note">Llama-2-13B on one A100-80GB, 512-token prompt, forward-pass latency. GPTQ used the ExLlama kernel, 4-bit, group 128. Old library versions; AutoGPTQ has since been archived in favour of GPTQModel.</div>
+  <div class="chart-grid">
+    <div class="figure"><div class="f-title">Speed and memory</div><div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-hfb"></table></div>
+      <div class="cite">Source: <a href="https://huggingface.co/blog/overview-quantization-transformers" target="_blank" rel="noopener">Hugging Face blog, overview of quantization schemes</a> · rounded to 2 decimals / whole MB</div></div>
+    <div class="figure"><div class="f-title">Open LLM Leaderboard v1 scores</div><div class="tbl-wrap" style="margin-top:10px;border:0;"><table id="t-hfq"></table></div>
+      <div class="cite">Source: <a href="https://huggingface.co/blog/overview-quantization-transformers" target="_blank" rel="noopener">Hugging Face blog</a> · the blog recommends bitsandbytes for fine-tuning and GPTQ for generation</div></div>
+  </div>
+</section>
+  <div class="panel-nav"><a class="pn prev" href="#engines"><span class="pn-k">Previous</span><span class="pn-t">← Engines</span></a><a class="pn next" href="#findings"><span class="pn-k">Next</span><span class="pn-t">Findings →</span></a></div>
+</div>
+<div class="panel" id="findings" role="tabpanel" aria-labelledby="tab-findings" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 5 of 7</div>
+    <h2 class="panel-title">Findings</h2>
+    <p class="panel-lede">What holds when the same pattern shows up in more than one source. Then test yourself.</p>
+  </div>
+
+  <section class="block" id="findings-list">
+  <div class="sec-head">
+    <h2>Nine patterns</h2>
+    <p>Patterns that hold across more than one source. Each line of evidence links to where the number comes from.</p>
+  </div>
+  <div class="findings">
+    <div class="finding">
+      <h4>Your GPU decides the format before accuracy does</h4>
+      <div>
+        <p>FP8 with FP8 matmuls needs Ada or Hopper in vLLM; on Ampere it runs weight-only. TensorRT-LLM's FP8 per-tensor recipe skips Ampere entirely, and NVFP4 runs natively only on Blackwell. INT4 W4A16 is the one format every major engine runs from Ampere upward.</p>
+        <div class="ev"><a href="https://docs.vllm.ai/en/latest/features/quantization/" target="_blank" rel="noopener">vLLM hardware table</a> · <a href="https://nvidia.github.io/TensorRT-LLM/features/quantization.html" target="_blank" rel="noopener">TensorRT-LLM matrix</a> · <a href="https://docs.sglang.io/docs/advanced_features/quantization" target="_blank" rel="noopener">SGLang docs</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>Batching engine matters more than kernel speed under load</h4>
+      <div>
+        <p>On an RTX 5090, single-stream decode was within about 11% across vLLM, llama.cpp and Ollama (76.8–85.7 tok/s). At 32 concurrent requests, vLLM delivered 936 tok/s, llama.cpp 369 and Ollama 74. Among datacenter engines on the same FP8 70B model, the spread at 100 concurrent was only 2,400 to 2,780 tok/s.</p>
+        <div class="ev"><a href="https://computingforgeeks.com/ollama-vs-vllm-vs-llama-cpp/" target="_blank" rel="noopener">computingforgeeks engines</a> · <a href="https://www.spheron.network/blog/vllm-vs-tensorrt-llm-vs-sglang-benchmarks" target="_blank" rel="noopener">Spheron</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>Naive 4-bit breaks small VLMs</h4>
+      <div>
+        <p>Quantizing every layer of Qwen2-VL-2B with bitsandbytes 4-bit produced a wrong answer; keeping a handful of sensitive layers in 16-bit fixed it for 0.45 GB. SGLang reports near-zero accuracy for one GPTQ variant of Qwen2.5-VL-7B. Vision models need per-layer care.</p>
+        <div class="ev"><a href="https://unsloth.ai/blog/dynamic-4bit" target="_blank" rel="noopener">Unsloth dynamic 4-bit</a> · <a href="https://docs.sglang.io/docs/advanced_features/quantization" target="_blank" rel="noopener">SGLang docs</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>8-bit is free</h4>
+      <div>
+        <p>FP8 dynamic, INT8 weight-only and W8A8 SmoothQuant land within noise of full precision in every study that tested them. On a 24GB card, FP8 on Qwen3.5-9B also cut latency from 4.68 s to 2.66 s and raised KV capacity from about 18K to 166K tokens.</p>
+        <div class="ev">Qwen FP8 GSM8K 87.5 = BF16 87.5 · LLaMA3-8B AWQ-W8 68.7 vs 68.6 · Llama 3.1 405B W8A8-FP 86.89 vs 86.79 on Open LLM v1 · <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/" target="_blank" rel="noopener">cfg</a> · <a href="https://arxiv.org/html/2404.14047#S2.T3" target="_blank" rel="noopener">2404.14047</a> · <a href="https://arxiv.org/html/2411.02355" target="_blank" rel="noopener">2411.02355</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>4-bit loss depends on the task, not the method label</h4>
+      <div>
+        <p>Calibrated 4-bit methods keep about 98–99% on multiple-choice and DocVQA. On GSM8K, a generative task with a strict answer format, uniform W4A16 on Qwen3.5-9B lost 6 to 12 points. Likelihood-scored benchmarks understate damage to free-form generation.</p>
+        <div class="ev">LLaMA3-8B AWQ-4 68.2/68.6 · LLaVA DocVQA AWQ-4 77.2/78.2 · Qwen GPTQ 81.8/87.5, AWQ strict 75.7/87.5 · Llama 3.1 8B W4A16 Arena-Hard 24.0 vs 25.8 · <a href="https://arxiv.org/html/2411.02355" target="_blank" rel="noopener">2411.02355</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>Output-format drift is a separate failure mode</h4>
+      <div>
+        <p>AWQ on Qwen3.5-9B solved about as many problems as GPTQ (82.0 flexible) but broke the required answer format more often (75.7 strict). Any pipeline that parses structured output should be scored on its exact schema.</p>
+        <div class="ev">Strict − flexible gap: AWQ −6.3 pts, GPTQ +1.0, FP8 +0.5 (derived) · <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#awq-vs-gptq-in-vllm" target="_blank" rel="noopener">cfg, AWQ vs GPTQ</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>Bits per weight do not predict VRAM</h4>
+      <div>
+        <p>The 4-bit vLLM checkpoints put 7.3 GiB on the GPU, while GGUF Q4_K_M uses 5.4 GiB, because llm-compressor kept the 248K-vocab embedding and output head in BF16. On Llama-2-13B, AWQ used 0.9 to 1.9 GB more VRAM than GPTQ at the same group size.</p>
+        <div class="ev"><a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#why-a-4-bit-awq-checkpoint-is-bigger-than-a-4-bit-gguf" target="_blank" rel="noopener">cfg, why AWQ is bigger than GGUF</a> · <a href="https://oobabooga.github.io/blog/posts/gptq-awq-exl2-llamacpp/#awq" target="_blank" rel="noopener">oobabooga, AWQ</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>Perplexity hides most of the damage</h4>
+      <div>
+        <p>Q4_K_M perplexity sits within 0.3% of BF16, yet it picks a different next token 7.5% of the time. Q5_K_M even scores lower perplexity than BF16. KL divergence and a task metric catch what perplexity misses.</p>
+        <div class="ev">Q4_K_M: PPL 7.755 vs 7.738 · top-1 agree 92.5% · mean KLD 0.034 · <a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#three-quantization-myths-this-benchmark-breaks" target="_blank" rel="noopener">cfg, myths</a></div>
+      </div>
+    </div>
+    <div class="finding">
+      <h4>3 bits is a cliff for naive rounding; 2 bits needs size and mixed precision</h4>
+      <div>
+        <p>RTN drops from 63.9 at 4 bits to 40.2 at 3 bits on LLaMA3-8B. Calibrated methods hold 61.7 to 64.5 at 3 bits. At 2 bits, uniform PTQ on an 8B model falls to near chance on text and to no output on vision-language tasks. A 27B model with a mixed-precision GGUF mix (Unsloth Q2_K_XL) still keeps 96% of MMLU.</p>
+        <div class="ev">LLaMA3-8B GPTQ-2 36.2/68.6 · Gemma 3 27B Q2_K_XL 68.7/71.5 MMLU · <a href="https://arxiv.org/html/2404.14047#S2.T3" target="_blank" rel="noopener">2404.14047</a> · <a href="https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs" target="_blank" rel="noopener">Unsloth</a></div>
+      </div>
+    </div>
+  </div>
+  <div class="callout"><strong>For clinical extraction and note generation:</strong> serve FP8 on vLLM or SGLang if the GPUs are Ada or Hopper; on Ampere, FP8 still halves weight memory but runs weight-only. Move to INT4 W4A16 only if memory or concurrency forces it. For Qwen2.5-VL-style extraction, keep the vision encoder unquantized and validate the exact checkpoint in the exact engine. Score every candidate on entity-level recall for rare clinical terms, strict JSON schema validity, and KL divergence on your own transcripts. These are recommendations drawn from the evidence above, not results from a source.</div>
+</section>
+  
+  <div class="quiz" id="quiz">
+    <div class="notice-k">Self-check</div>
+    <h3 class="ex-title">Five questions, answers from this guide</h3>
+    <div id="quiz-body"></div>
+    <div class="quiz-score" id="quiz-score"></div>
+  </div>
+
+  <div class="panel-nav"><a class="pn prev" href="#tools"><span class="pn-k">Previous</span><span class="pn-t">← Toolkits</span></a><a class="pn next" href="#glossary"><span class="pn-k">Next</span><span class="pn-t">Glossary →</span></a></div>
+</div>
+<div class="panel" id="glossary" role="tabpanel" aria-labelledby="tab-glossary" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 6 of 7</div>
+    <h2 class="panel-title">Glossary</h2>
+    <p class="panel-lede">Every method, format, engine, metric and benchmark used in this guide. Filter by name, or jump to a group.</p>
+  </div>
+
+  <section class="block" id="glossary-list">
+  <div class="sec-head">
+    <p>Every method, format, metric and benchmark that appears on this page. The grey line under a definition says how to read that term in the tables above.</p>
+  </div>
+  <div class="g-tools">
+    <input id="g-search" type="search" placeholder="Filter terms, e.g. KLD, GPTQ, DocVQA" aria-label="Filter glossary">
+    <span class="g-count" id="g-count"></span>
+  </div>
+  <div class="g-jump" id="g-jump"></div>
+  <div id="g-body"></div>
+</section>
+  <div class="panel-nav"><a class="pn prev" href="#findings"><span class="pn-k">Previous</span><span class="pn-t">← Findings</span></a><a class="pn next" href="#sources"><span class="pn-k">Next</span><span class="pn-t">Sources →</span></a></div>
+</div>
+<div class="panel" id="sources" role="tabpanel" aria-labelledby="tab-sources" hidden>
+  <div class="panel-head">
+    <div class="eyebrow">Step 7 of 7</div>
+    <h2 class="panel-title">Sources and verification</h2>
+    <p class="panel-lede">Where every number comes from and how it was checked.</p>
+  </div>
+
+  <section class="block" id="method">
+  <div class="sec-head">
+    <h2>How this was verified</h2>
+    <p>What is quoted, what is computed, and what the sources themselves get wrong.</p>
+  </div>
+  <ol class="verify">
+    <li><strong>Collection.</strong> Every source page was fetched on 16 Oct 2026 and its tables transcribed. Numbers published only as chart images (LMSYS, BentoML, most of Unsloth Dynamic 3.0) are described in words and not tabulated.</li>
+    <li><strong>Derived values.</strong> Retention and recovery percentages, the Pareto frontier, strict-minus-flexible gaps, KLD and size changes, and “extra over bnb 4-bit” are computed on this page from the quoted numbers. Each table's citation line says when a column is derived.</li>
+    <li><strong>Automated check.</strong> A script compared all 728 numeric values in this page's data tables against the tables copied from each fetched source page: 0 mismatches. The few hand-entered tables (Hugging Face blog, Unsloth headline claims, the at-a-glance cards) were checked by eye; the Hugging Face blog latencies and memory are rounded from the published values.</li>
+    <li><strong>Inconsistencies inside sources.</strong> arXiv 2411.02355 prints several recovery percentages with a stray leading digit (for example 199.31 for 99.31), so recovery is recomputed from raw scores. The engines article gives the RTX 5090 vLLM single stream as 82 tok/s in its text and 85.7 in its table; the table is used. Unsloth's dynamic 4-bit post claims under 10% extra VRAM, while its own table shows 33% for Qwen2-VL-2B.</li>
+    <li><strong>Comparability.</strong> Each study uses its own hardware, runtime versions, prompts and metrics. Compare within a table. Perplexity values are never comparable across model families because tokenizers differ.</li>
+    <li><strong>Vendor sources.</strong> Unsloth (its own quants and fine-tuning library) and Spheron (a GPU cloud) publish results about products they sell or host. Their numbers are shown as published and labelled as such.</li>
+  </ol>
+</section>
+  <section class="block" id="source-list">
+    <div class="sec-head"><h2>All sources</h2></div>
+    <ol>
+      <li><a href="https://computingforgeeks.com/gguf-vs-awq-vs-gptq/" target="_blank" rel="noopener">GGUF vs AWQ vs GPTQ vs FP8: LLM Quantization Tested on a 24GB GPU</a> — computingforgeeks, Sep 2026 (Qwen3.5-9B)</li>
+      <li><a href="https://oobabooga.github.io/blog/posts/gptq-awq-exl2-llamacpp/" target="_blank" rel="noopener">A detailed comparison between GPTQ, AWQ, EXL2, q4_K_M, q4_K_S, and load_in_4bit</a> — oobabooga blog (Llama-2-13B)</li>
+      <li><a href="https://arxiv.org/html/2404.14047" target="_blank" rel="noopener">An Empirical Study of LLaMA3 Quantization: From LLMs to MLLMs</a> — Huang et al., arXiv 2404.14047 v3 (LLaMA3-8B, LLaVA-Next-8B)</li>
+      <li><a href="https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs" target="_blank" rel="noopener">Unsloth Dynamic 2.0 GGUFs</a> — Unsloth docs (Gemma 3 27B MMLU and KLD)</li>
+      <li><a href="https://github.com/Macaronlin/LLaMA3-Quantization" target="_blank" rel="noopener">Macaronlin/LLaMA3-Quantization</a> — evaluation scripts for source 3</li>
+      <li><a href="https://arxiv.org/html/2411.02355" target="_blank" rel="noopener">Give Me BF16 or Give Me Death? Accuracy-Performance Trade-Offs in LLM Quantization</a> — Kurtic et al., arXiv 2411.02355 (Llama 3.1 8B/70B/405B)</li>
+      <li><a href="https://computingforgeeks.com/ollama-vs-vllm-vs-llama-cpp/" target="_blank" rel="noopener">Ollama vs vLLM vs llama.cpp</a> — computingforgeeks, Oct 2026 (Qwen3.8-27B)</li>
+      <li><a href="https://www.spheron.network/blog/vllm-vs-tensorrt-llm-vs-sglang-benchmarks" target="_blank" rel="noopener">vLLM vs TensorRT-LLM vs SGLang benchmarks</a> — Spheron, updated Sep 2026 (Llama-3.3-70B FP8)</li>
+      <li><a href="https://docs.vllm.ai/en/latest/features/quantization/" target="_blank" rel="noopener">vLLM quantization docs</a></li>
+      <li><a href="https://docs.sglang.io/docs/advanced_features/quantization" target="_blank" rel="noopener">SGLang quantization docs</a></li>
+      <li><a href="https://nvidia.github.io/TensorRT-LLM/features/quantization.html" target="_blank" rel="noopener">TensorRT-LLM quantization docs</a></li>
+      <li><a href="https://lmdeploy.readthedocs.io/en/latest/quantization/w4a16.html" target="_blank" rel="noopener">LMDeploy AWQ/GPTQ W4A16 docs</a></li>
+      <li><a href="https://huggingface.co/docs/transformers/main/en/quantization/overview" target="_blank" rel="noopener">Hugging Face Transformers quantization overview</a></li>
+      <li><a href="https://huggingface.co/blog/overview-quantization-transformers" target="_blank" rel="noopener">Overview of natively supported quantization schemes in Transformers</a> — Hugging Face blog, Sep 2023</li>
+      <li><a href="https://unsloth.ai/docs/basics/unsloth-benchmarks" target="_blank" rel="noopener">Unsloth benchmarks</a> and <a href="https://unsloth.ai/blog/dynamic-4bit" target="_blank" rel="noopener">Unsloth dynamic 4-bit quantization</a></li>
+      <li><a href="https://github.com/intel/auto-round" target="_blank" rel="noopener">intel/auto-round</a> — AutoRound README</li>
+      <li><a href="https://lmsys.org/blog/2024-07-25-sglang-llama3/" target="_blank" rel="noopener">LMSYS SGLang Llama 3 serving</a> (Jul 2024) and <a href="https://www.bentoml.com/blog/benchmarking-llm-inference-backends" target="_blank" rel="noopener">BentoML inference backend benchmark</a> (Jun 2024) — qualitative only</li>
+    </ol>
+    <p class="note">Glossary definitions cite the original paper or official documentation for each term. Hardware, runtimes and metrics differ across sources; absolute speeds from 2023–2024 studies are out of date and useful only for relative ranking.</p>
+  </section>
+  <div class="panel-nav"><a class="pn prev" href="#glossary"><span class="pn-k">Previous</span><span class="pn-t">← Glossary</span></a><span></span></div>
+</div>
+</main>
+
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const NS = "http://www.w3.org/2000/svg";
+  const fmt = (v, d = 1) => (v == null ? "—" : Number(v).toFixed(d));
+  const pct = (a, b) => (a / b) * 100;
+  const tip = $("#tip");
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.hidden = false;
+    const r = tip.getBoundingClientRect();
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+    if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+    tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+  const el = (tag, attrs = {}, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const txt = (parent, x, y, s, attrs = {}) => { const t = el("text", { x, y, ...attrs }, parent); t.textContent = s; return t; };
+
+  /* ---------------- DATA ---------------- */
+  const qwenVllm = [
+    { f: "BF16", w: 16.8, lat: 4.68, thr: 117, kv: 17873, gs: 87.5, gf: 87.2, ref: true },
+    { f: "FP8 dynamic", w: 10.38, lat: 2.66, thr: 338, kv: 166074, gs: 87.5, gf: 87.0 },
+    { f: "GPTQ W4A16", w: 7.27, lat: 1.83, thr: 363, kv: 238312, gs: 81.8, gf: 80.8 },
+    { f: "AWQ W4A16", w: 7.29, lat: 1.84, thr: 363, kv: 237568, gs: 75.7, gf: 82.0 },
+  ];
+  const qwenGguf = [
+    { q: "BF16", size: 17.13, pp: 2822, tg: 30.5, ppl: 7.738, kld: 0, k99: 0, top: 100, gs: null, gf: null, ref: true },
+    { q: "Q8_0", size: 9.10, pp: 3266, tg: 53.2, ppl: 7.750, kld: 0.0017, k99: 0.0085, top: 98.5, gs: 87.6, gf: 87.2 },
+    { q: "Q6_K", size: 7.03, pp: 3011, tg: 64.8, ppl: 7.747, kld: 0.0052, k99: 0.0227, top: 97.2, gs: null, gf: null },
+    { q: "Q5_K_M", size: 6.18, pp: 3166, tg: 72.9, ppl: 7.660, kld: 0.0263, k99: 0.2154, top: 93.9, gs: null, gf: null },
+    { q: "Q4_K_M", size: 5.37, pp: 3254, tg: 81.6, ppl: 7.755, kld: 0.0340, k99: 0.2785, top: 92.5, gs: 84.8, gf: 84.4 },
+    { q: "Q4_K_M (no imatrix)", size: 5.37, pp: null, tg: 81.6, ppl: 7.763, kld: 0.0572, k99: 0.4619, top: 89.9, gs: null, gf: null },
+    { q: "IQ4_XS", size: 4.95, pp: 3333, tg: 89.2, ppl: 7.857, kld: 0.0264, k99: 0.2155, top: 93.0, gs: 86.4, gf: 86.0 },
+    { q: "Q3_K_M", size: 4.40, pp: 3110, tg: 88.3, ppl: 8.194, kld: 0.0798, k99: 0.6760, top: 87.8, gs: 84.2, gf: 84.4 },
+    { q: "Q2_K", size: 3.64, pp: 2729, tg: 103.6, ppl: 8.914, kld: 0.2279, k99: 1.9649, top: 79.7, gs: 76.7, gf: 76.9 },
+  ];
+  const l2 = [
+    ["EXL2 4.900b", "EXL2", 4.30752, 9305, 7860, 1.76, 15.37, 8.12, 52.05],
+    ["EXL2 4.650b", "EXL2", 4.32136, 9025, 7481, 1.74, 14.17, 8.20, 56.46],
+    ["AWQ 4bit g32", "AWQ", 4.32522, 10567, 7624, 3.60, 20.27, 11.45, 39.47],
+    ["GGUF Q4_K_M", "GGUF", 4.33326, 8985, 7502, 3.73, 25.95, 9.90, 30.83],
+    ["GPTQ 4bit g32 act", "GPTQ", 4.33805, 8701, 7633, 1.86, 18.85, 7.58, 42.44],
+    ["EXL2 4.400b", "EXL2", 4.33843, 8591, 7104, 1.75, 14.12, 7.53, 56.66],
+    ["GGUF Q4_K_S", "GGUF", 4.34246, 8553, 7071, 3.68, 22.66, 9.31, 35.30],
+    ["AWQ 4bit g128", "AWQ", 4.34761, 9623, 6915, 3.59, 19.70, 11.03, 40.61],
+    ["EXL2 4.250b", "EXL2", 4.34897, 8339, 6876, 1.68, 14.06, 7.55, 56.90],
+    ["GPTQ 4bit g128 act", "GPTQ", 4.35793, 7935, 6924, 1.85, 15.41, 6.84, 51.91],
+    ["bnb load_in_4bit", "bnb", 4.36427, 8193, 24829, 3.01, 34.70, 20.81, 23.05],
+    ["EXL2 4.125b", "EXL2", 4.36984, 8107, 6687, 1.69, 14.13, 7.10, 56.62],
+    ["EXL2 4.000b", "EXL2", 4.37648, 7883, 6498, 1.71, 14.09, 7.57, 56.78],
+  ].map(r => ({ name: r[0], fam: r[1], ppl: r[2], vram: r[3] / 1000, disk: r[4] / 1000, pp: r[5], ev: r[6], load: r[7], tps: r[8] }));
+  // Pareto: VRAM vs PPL
+  l2.forEach(a => { a.front = !l2.some(b => b !== a && b.vram <= a.vram && b.ppl <= a.ppl && (b.vram < a.vram || b.ppl < a.ppl)); });
+
+  // LLaMA3-8B: method, W, A, G, wiki, c4, ptb, piqa, arce, arcc, hs, wino, avg
+  const l3 = [
+    ["FP16", 16, 16, "—", 6.1, 9.2, 10.6, 79.9, 80.1, 50.4, 60.2, 72.8, 68.6],
+    ["RTN", 8, 16, "—", 6.2, 9.5, 11.2, 79.7, 80.8, 50.4, 60.1, 73.4, 68.9],
+    ["RTN", 4, 16, 128, 8.5, 13.4, 14.5, 76.6, 70.1, 45.0, 56.8, 71.0, 63.9],
+    ["RTN", 3, 16, 128, 27.9, 110, 95.6, 62.3, 32.1, 22.5, 29.1, 54.7, 40.2],
+    ["RTN", 2, 16, 128, 1900, 25000, 18000, 53.1, 24.8, 22.1, 26.9, 53.1, 36.0],
+    ["GPTQ", 8, 16, "—", 6.1, 9.4, 10.6, 79.8, 80.1, 50.2, 60.2, 72.8, 68.6],
+    ["GPTQ", 4, 16, 128, 6.5, 10.4, 11.0, 78.4, 78.8, 47.7, 59.0, 72.6, 67.3],
+    ["GPTQ", 3, 16, 128, 8.2, 13.7, 15.2, 74.9, 70.5, 37.7, 54.3, 71.1, 61.7],
+    ["GPTQ", 2, 16, 128, 210, 41000, 910, 53.9, 28.8, 19.9, 27.7, 50.5, 36.2],
+    ["AWQ", 8, 16, "—", 6.1, 8.9, 10.6, 79.6, 80.3, 50.5, 60.2, 72.8, 68.7],
+    ["AWQ", 4, 16, 128, 6.6, 9.4, 11.1, 79.1, 79.7, 49.3, 59.1, 74.0, 68.2],
+    ["AWQ", 3, 16, 128, 8.2, 11.6, 13.2, 77.7, 74.0, 43.2, 55.1, 72.1, 64.4],
+    ["AWQ", 2, 16, 128, 1.7e6, 2.1e6, 1.8e6, 52.4, 24.2, 21.5, 25.6, 50.7, 34.9],
+    ["SliM-LLM", 4, 16, 128, 6.4, 9.5, 10.9, 78.9, 79.9, 49.4, 58.7, 72.6, 67.9],
+    ["SliM-LLM", 3, 16, 128, 7.7, 13.1, 14.7, 77.8, 73.7, 42.9, 55.5, 72.8, 64.5],
+    ["SliM-LLM", 2, 16, 128, 39.7, 110, 160, 57.1, 35.4, 26.1, 28.9, 56.6, 40.8],
+    ["QuIP", 4, 16, "—", 6.5, 11.1, 9.5, 78.2, 78.2, 47.4, 58.6, 73.2, 67.1],
+    ["QuIP", 3, 16, "—", 7.5, 11.3, 12.6, 76.8, 72.9, 41.0, 55.4, 72.5, 63.7],
+    ["QuIP", 2, 16, "—", 85.1, 130, 180, 52.9, 29.0, 21.3, 29.2, 51.7, 36.8],
+    ["DB-LLM", 2, 16, 128, 13.6, 19.2, 23.8, 68.9, 59.1, 28.2, 42.1, 60.4, 51.8],
+    ["BiLLM", 1.1, 16, 128, 28.3, 290, 94.7, 56.1, 36.0, 17.7, 28.9, 51.0, 37.9],
+    ["SmoothQuant", 8, 8, "—", 6.3, 9.2, 10.8, 79.5, 79.7, 49.0, 60.0, 73.2, 68.3],
+    ["SmoothQuant", 6, 6, "—", 7.7, 11.8, 12.5, 76.8, 75.5, 45.0, 56.9, 69.0, 64.6],
+    ["SmoothQuant", 4, 4, "—", 4300, 4000, 3600, 54.6, 26.3, 20.0, 26.4, 50.3, 35.5],
+  ].map(r => ({ m: r[0], w: r[1], a: r[2], g: r[3], wiki: r[4], c4: r[5], ptb: r[6], piqa: r[7], arce: r[8], arcc: r[9], hs: r[10], wino: r[11], avg: r[12] }));
+  const l3cost = [
+    { m: "GPTQ", mem: 40.3, t: 19, tps: 61.2 },
+    { m: "AWQ", mem: 20.1, t: 10, tps: 89.8 },
+    { m: "SmoothQuant", mem: 16.0, t: 15, tps: null },
+    { m: "OmniQuant", mem: 30.61, t: 307, tps: 54.9 },
+  ];
+  const llava = [
+    ["FP16", 16, [71.7, 69.2, 78.2, 72.2, 376.8, 1588.3]],
+    ["RTN", 4, [70.4, 65.7, 77.0, 70.1, 304.4, 1550.9]],
+    ["RTN", 3, [58.7, 63.2, 69.7, 64.3, 247.2, 1526.2]],
+    ["RTN", 2, null],
+    ["GPTQ", 4, [70.7, 67.4, 77.4, 71.0, 331.6, 1563.4]],
+    ["GPTQ", 3, [66.2, 65.1, 75.6, 67.4, 290.1, 1541.7]],
+    ["GPTQ", 2, null],
+    ["AWQ", 4, [70.6, 68.0, 77.2, 71.1, 325.7, 1562.7]],
+    ["AWQ", 3, [67.7, 65.4, 74.4, 68.0, 298.6, 1541.7]],
+    ["AWQ", 2, null],
+    ["SliM-LLM", 4, [70.6, 68.0, 77.2, 71.1, 342.5, 1563.9]],
+    ["SliM-LLM", 3, [68.2, 67.5, 74.8, 68.9, 321.0, 1554.3]],
+    ["SliM-LLM", 2, [57.2, 49.3, 60.6, 60.9, 282.1, 1515.8]],
+  ];
+  // Gemma 3 27B (Unsloth): quant, mmlu (from BF16), mmlu (from QAT), disk GB
+  const gemma = [
+    ["IQ1_S", 41.87, 43.37, 6.06], ["IQ1_M", 48.10, 47.23, 6.51], ["IQ2_XXS", 59.20, 56.57, 7.31], ["IQ2_M", 66.47, 64.47, 8.96],
+    ["Q2_K", 68.50, 67.60, 9.78], ["Q2_K_XL", 68.70, 67.77, 9.95], ["IQ3_XXS", 68.27, 67.07, 10.07], ["Q3_K_M", 70.70, 69.77, 12.51],
+    ["Q3_K_XL", 70.87, 69.50, 12.76], ["Q4_K_M", 71.23, 71.00, 15.41], ["Q4_K_XL", 71.47, 71.07, 15.64], ["Q5_K_M", 71.77, 71.23, 17.95],
+    ["Q6_K", 71.87, 71.60, 20.64], ["Q8_0", 71.60, 71.53, 26.74],
+  ].map(r => ({ q: r[0], a: r[1], b: r[2], gb: r[3] }));
+  const gemmaKld = [
+    ["IQ1_S", 1.035688, 5.83, 0.972932, 6.06], ["IQ1_M", 0.832252, 6.33, 0.800049, 6.51], ["IQ2_XXS", 0.535764, 7.16, 0.521039, 7.31],
+    ["IQ2_M", 0.26554, 8.84, 0.258192, 8.96], ["Q2_K_XL", 0.229671, 9.78, 0.220937, 9.95], ["Q3_K_XL", 0.087845, 12.51, 0.080617, 12.76],
+    ["Q4_K_XL", 0.024916, 15.41, 0.023701, 15.64],
+  ];
+  const llavaCols = ["AI2D", "ChartQA", "DocVQA", "MMBench", "MME-Cog", "MME-Perc"];
+
+  /* ---------------- GLANCE ---------------- */
+  const glance = [
+    { model: "Qwen3.5-9B", kind: "Hybrid DeltaNet LLM · GSM8K", rows: [["BF16 GSM8K", "87.5%"], ["FP8 GSM8K / VRAM", "87.5% · 10.4 GiB"], ["Best 4-bit (IQ4_XS)", "86.4% · 4.95 GiB"], ["vLLM W4A16 range", "75.7–81.8%"]], v: "FP8 is lossless and 2.9× BF16 throughput. GGUF 4-bit beat llm-compressor W4A16 on accuracy." },
+    { model: "Llama-2-13B", kind: "Dense LLM · wikitext PPL", rows: [["PPL range (13 configs)", "4.308–4.376"], ["VRAM range", "7.9–10.6 GB"], ["Fastest decode", "56.9 tok/s"], ["Slowest decode", "23.1 tok/s"]], v: "All 4-bit formats sit within 1.6% PPL of each other. The real differences are VRAM and speed." },
+    { model: "LLaMA3-8B", kind: "Dense LLM · 5-task zero-shot", rows: [["FP16 average", "68.6"], ["AWQ 4-bit g128", "68.2 (99.4%)"], ["Best 3-bit (SliM)", "64.5 (94.0%)"], ["Best 2-bit (DB-LLM)", "51.8 (75.5%)"]], v: "4-bit is near-lossless with any calibrated method. 3-bit separates methods; 2-bit breaks most." },
+    { model: "LLaVA-Next-8B", kind: "VLM · DocVQA and 5 others", rows: [["FP16 DocVQA", "78.2"], ["4-bit DocVQA (best)", "77.4 (99.0%)"], ["3-bit DocVQA (best)", "75.6 (96.7%)"], ["2-bit GPTQ/AWQ", "no valid output"]], v: "Document VQA survives 4-bit well. Reasoning-style scores (MME-Cognition) degrade first." },
+    { model: "Gemma 3 27B", kind: "Unsloth Dynamic GGUF · MMLU", rows: [["BF16 MMLU", "71.5"], ["Q4_K_XL", "71.47 · 15.6 GB"], ["Q2_K_XL", "68.70 · 9.95 GB"], ["IQ1_S", "41.87 · 6.06 GB"]], v: "Flat down to 3-bit, still 96% at 2-bit. Below that, accuracy falls fast." },
+  ];
+  $("#glance-grid").innerHTML = glance.map(g => `
+    <div><div><div class="g-model">${g.model}</div><div class="g-kind">${g.kind}</div></div>
+    <dl>${g.rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join("")}</dl>
+    <div class="verdict">${g.v}</div></div>`).join("");
+
+  /* ---------------- TABLES ---------------- */
+  const icon = { x: '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>' };
+  const collapsedChip = `<span class="chip crit">${icon.x}collapsed</span>`;
+  const heat = (ret) => {
+    // tint by retention 50%..100% on the sequential hue
+    const a = Math.max(0, Math.min(1, (ret - 50) / 50));
+    return `background: color-mix(in oklab, var(--seq) ${Math.round(a * 26)}%, transparent)`;
+  };
+
+  // Qwen vLLM
+  {
+    const base = qwenVllm[0];
+    let h = `<thead><tr><th>Format</th><th class="num">Weights<br>GiB</th><th class="num">Latency<br>512/128</th><th class="num">Throughput<br>tok/s</th><th class="num">KV cache<br>tokens</th><th class="num">GSM8K<br>strict</th><th class="num">GSM8K<br>flexible</th><th class="num">Strict<br>retained</th></tr></thead><tbody>`;
+    qwenVllm.forEach(r => {
+      const ret = pct(r.gs, base.gs);
+      h += `<tr class="${r.ref ? "ref" : ""}"><td>${r.f}</td><td class="num">${fmt(r.w, 2)}</td><td class="num">${fmt(r.lat, 2)} s</td><td class="num">${r.thr}</td><td class="num">${r.kv.toLocaleString()}</td><td class="num">${fmt(r.gs)}%</td><td class="num">${fmt(r.gf)}%</td><td class="num heat" style="${heat(ret)}">${fmt(ret)}%</td></tr>`;
+    });
+    $("#t-qwen-vllm").innerHTML = h + "</tbody>";
+  }
+  // Qwen GGUF
+  {
+    let h = `<thead><tr><th>Quant</th><th class="num">Size<br>GiB</th><th class="num">Prompt<br>pp512</th><th class="num">Gen<br>tg128</th><th class="num">PPL</th><th class="num">Mean<br>KLD</th><th class="num">p99<br>KLD</th><th class="num">Top-1<br>agree</th><th class="num">GSM8K<br>strict</th></tr></thead><tbody>`;
+    qwenGguf.forEach(r => {
+      h += `<tr class="${r.ref ? "ref" : ""}"><td>${r.q}</td><td class="num">${fmt(r.size, 2)}</td><td class="num">${r.pp == null ? "—" : r.pp.toLocaleString()}</td><td class="num">${fmt(r.tg)}</td><td class="num">${fmt(r.ppl, 3)}</td><td class="num">${r.kld === 0 ? "0" : fmt(r.kld, 4)}</td><td class="num">${r.k99 === 0 ? "0" : fmt(r.k99, 4)}</td><td class="num heat" style="${heat(r.top)}">${fmt(r.top)}%</td><td class="num">${r.gs == null ? '<span class="sub">not run</span>' : fmt(r.gs) + "%"}</td></tr>`;
+    });
+    $("#t-qwen-gguf").innerHTML = h + "</tbody>";
+  }
+  // Llama-2
+  {
+    const minP = Math.min(...l2.map(r => r.ppl)), minV = Math.min(...l2.map(r => r.vram)), maxT = Math.max(...l2.map(r => r.tps)), minL = Math.min(...l2.map(r => r.load));
+    let h = `<thead><tr><th>Config</th><th class="num">PPL</th><th class="num">VRAM<br>GB</th><th class="num">Disk<br>GB</th><th class="num">Prompt<br>3,200 tok</th><th class="num">Gen<br>800 tok</th><th class="num">Load<br>s</th><th class="num">Decode<br>tok/s</th><th>Frontier</th></tr></thead><tbody>`;
+    l2.forEach(r => {
+      h += `<tr><td>${r.name}</td><td class="num ${r.ppl === minP ? "best" : ""}">${fmt(r.ppl, 4)}</td><td class="num ${r.vram === minV ? "best" : ""}">${fmt(r.vram, 2)}</td><td class="num">${fmt(r.disk, 2)}</td><td class="num">${fmt(r.pp, 2)} s</td><td class="num">${fmt(r.ev, 2)} s</td><td class="num ${r.load === minL ? "best" : ""}">${fmt(r.load, 2)}</td><td class="num ${r.tps === maxT ? "best" : ""}">${fmt(r.tps, 2)}</td><td>${r.front ? '<span class="chip good">frontier</span>' : ""}</td></tr>`;
+    });
+    $("#t-l2").innerHTML = h + "</tbody>";
+  }
+  // LLaMA3 main
+  {
+    const base = l3[0].avg;
+    const ppl = (v) => v >= 1000 ? v.toExponential(1).replace("e+", "e") : fmt(v);
+    let h = `<thead><tr><th>Method</th><th class="num">W</th><th class="num">A</th><th class="num">Group</th><th class="num">Wiki2<br>PPL</th><th class="num">C4<br>PPL</th><th class="num">PIQA</th><th class="num">ARC-e</th><th class="num">ARC-c</th><th class="num">HellaSwag</th><th class="num">Wino</th><th class="num">Avg</th><th class="num">Retained</th></tr></thead><tbody>`;
+    l3.forEach((r, i) => {
+      const ret = pct(r.avg, base);
+      const dead = r.wiki > 100 || r.avg < 40;
+      h += `<tr class="${i === 0 ? "ref" : ""}"><td>${r.m}</td><td class="num">${r.w}</td><td class="num">${r.a}</td><td class="num">${r.g}</td><td class="num">${ppl(r.wiki)}</td><td class="num">${ppl(r.c4)}</td><td class="num">${fmt(r.piqa)}</td><td class="num">${fmt(r.arce)}</td><td class="num">${fmt(r.arcc)}</td><td class="num">${fmt(r.hs)}</td><td class="num">${fmt(r.wino)}</td><td class="num"><strong>${fmt(r.avg)}</strong></td><td class="num heat" style="${heat(ret)}">${dead ? collapsedChip : fmt(ret) + "%"}</td></tr>`;
+    });
+    $("#t-l3").innerHTML = h + "</tbody>";
+  }
+  // LLaMA3 cost
+  {
+    let h = `<thead><tr><th>Method (W4)</th><th class="num">Quant GPU<br>memory GB</th><th class="num">Quant time<br>min</th><th class="num">Decode<br>tok/s</th></tr></thead><tbody>`;
+    l3cost.forEach(r => { h += `<tr><td>${r.m}</td><td class="num">${fmt(r.mem, 1)}</td><td class="num">${r.t}</td><td class="num">${r.tps == null ? '<span class="sub">no kernel</span>' : fmt(r.tps)}</td></tr>`; });
+    $("#t-l3-cost").innerHTML = h + "</tbody>";
+  }
+  // LLaVA
+  {
+    const base = llava[0][2];
+    let h = `<thead><tr><th>Method</th><th class="num">W</th>${llavaCols.map(c => `<th class="num">${c}</th>`).join("")}</tr></thead><tbody>`;
+    llava.forEach((r, i) => {
+      h += `<tr class="${i === 0 ? "ref" : ""}"><td>${r[0]}</td><td class="num">${r[1]}</td>`;
+      if (!r[2]) h += `<td colspan="${llavaCols.length}">${collapsedChip} <span class="sub">score 0 or unexpected characters on all six</span></td>`;
+      else r[2].forEach((v, j) => {
+        const ret = pct(v, base[j]);
+        h += i === 0 ? `<td class="num">${fmt(v)}</td>` : `<td class="num heat" style="${heat(ret)}">${fmt(v)} <span class="sub">${Math.round(ret)}%</span></td>`;
+      });
+      h += `</tr>`;
+    });
+    $("#t-llava").innerHTML = h + "</tbody>";
+  }
+
+  // Gemma tables
+  {
+    let h = `<thead><tr><th>Quant</th><th class="num">Disk<br>GB</th><th class="num">MMLU<br>from BF16</th><th class="num">Retained</th><th class="num">MMLU<br>from QAT</th><th class="num">Retained</th></tr></thead><tbody>`;
+    h += `<tr class="ref"><td>BF16</td><td class="num">—</td><td class="num">71.50</td><td class="num">100%</td><td class="num">—</td><td class="num">—</td></tr>`;
+    gemma.forEach(r => { const ra = pct(r.a, 71.5), rb = pct(r.b, 71.5); h += `<tr><td>${r.q}</td><td class="num">${fmt(r.gb, 2)}</td><td class="num">${fmt(r.a, 2)}</td><td class="num heat" style="${heat(ra)}">${fmt(ra)}%</td><td class="num">${fmt(r.b, 2)}</td><td class="num heat" style="${heat(rb)}">${fmt(rb)}%</td></tr>`; });
+    h += `<tr><td>Google QAT</td><td class="num">17.20</td><td class="num">—</td><td class="num">—</td><td class="num">70.64</td><td class="num heat" style="${heat(pct(70.64, 71.5))}">${fmt(pct(70.64, 71.5))}%</td></tr>`;
+    $("#t-gemma").innerHTML = h + "</tbody>";
+    let k = `<thead><tr><th>Quant</th><th class="num">imatrix<br>KLD</th><th class="num">Dynamic<br>KLD</th><th class="num">KLD<br>change</th><th class="num">Size<br>change</th></tr></thead><tbody>`;
+    gemmaKld.forEach(r => { k += `<tr><td>${r[0]}</td><td class="num">${fmt(r[1], 4)}</td><td class="num">${fmt(r[3], 4)}</td><td class="num">${fmt((r[3] / r[1] - 1) * 100)}%</td><td class="num">+${fmt((r[4] / r[2] - 1) * 100)}%</td></tr>`; });
+    $("#t-gemma-kld").innerHTML = k + "</tbody>";
+  }
+
+  /* ---------------- CHARTS ---------------- */
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  function frame(host, W, H, m) {
+    host.innerHTML = "";
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" }, host);
+    return { svg, iw: W - m.l - m.r, ih: H - m.t - m.b, g: el("g", { transform: `translate(${m.l},${m.t})` }, svg) };
+  }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => span / s <= n) || mag * 10;
+    const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+
+  // 1) Qwen GSM8K bars
+  function qwenGsm() {
+    const host = $("#c-qwen-gsm"); const W = Math.max(300, host.clientWidth); const narrow = W < 460;
+    const rows = [
+      ...qwenVllm.slice(1).map(r => ({ k: r.f.replace(" dynamic", ""), v: r.gs, s: "var(--s1)", src: "vLLM", extra: `flexible ${fmt(r.gf)}% · ${fmt(r.w, 2)} GiB weights` })),
+      ...qwenGguf.filter(r => r.gs != null).map(r => ({ k: r.q, v: r.gs, s: "var(--s2)", src: "llama.cpp", extra: `flexible ${fmt(r.gf)}% · ${fmt(r.size, 2)} GiB file` })),
+    ];
+    const m = { t: 8, r: 44, b: 26, l: narrow ? 74 : 92 };
+    const rowH = 28, H = m.t + m.b + rows.length * rowH;
+    const { g, iw } = frame(host, W, H, m);
+    const lo = 60, hi = 90; const x = v => ((v - lo) / (hi - lo)) * iw;
+    niceTicks(lo, hi, 6).forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 0, y2: rows.length * rowH, class: "grid" }, g); txt(g, x(t), rows.length * rowH + 16, t + "%", { "text-anchor": "middle" }); });
+    rows.forEach((r, i) => {
+      const y = i * rowH + 6, bh = rowH - 12;
+      txt(g, -8, y + bh / 2 + 4, r.k, { "text-anchor": "end", class: "lbl" });
+      const bar = el("rect", { x: 0, y, width: Math.max(2, x(r.v)), height: bh, rx: 3, fill: r.s }, g);
+      txt(g, x(r.v) + 6, y + bh / 2 + 4, fmt(r.v), { class: "lbl" });
+      const hit = el("rect", { x: -m.l, y: i * rowH, width: iw + m.l + m.r, height: rowH, fill: "transparent" }, g);
+      hit.addEventListener("mousemove", e => { bar.setAttribute("opacity", ".75"); showTip(e, `<b>${r.k}</b> · ${r.src}<br>GSM8K strict ${fmt(r.v)}% (${fmt(pct(r.v, 87.5))}% of BF16)<br>${r.extra}`); });
+      hit.addEventListener("mouseleave", () => { bar.setAttribute("opacity", "1"); hideTip(); });
+    });
+    // BF16 line
+    el("line", { x1: x(87.5), x2: x(87.5), y1: -4, y2: rows.length * rowH, stroke: css("--ink-2"), "stroke-width": 1.5, "stroke-dasharray": "4 3" }, g);
+  }
+
+  // 2) Qwen KLD vs size (log y)
+  function qwenKld() {
+    const host = $("#c-qwen-kld"); const W = Math.max(300, host.clientWidth);
+    const pts = qwenGguf.filter(r => r.kld > 0 && !r.q.includes("no imatrix"));
+    const H = 280, m = { t: 14, r: 18, b: 40, l: 54 };
+    const { g, iw, ih } = frame(host, W, H, m);
+    const xlo = 3, xhi = 10, ylo = Math.log10(0.001), yhi = Math.log10(0.5);
+    const x = v => ((v - xlo) / (xhi - xlo)) * iw, y = v => ih - ((Math.log10(v) - ylo) / (yhi - ylo)) * ih;
+    [0.001, 0.01, 0.1].forEach(t => { el("line", { x1: 0, x2: iw, y1: y(t), y2: y(t), class: "grid" }, g); txt(g, -8, y(t) + 4, String(t), { "text-anchor": "end" }); });
+    [3, 4, 5, 6, 7, 8, 9, 10].forEach(t => { txt(g, x(t), ih + 18, t, { "text-anchor": "middle" }); });
+    el("line", { x1: 0, x2: iw, y1: ih, y2: ih, class: "axis" }, g);
+    txt(g, iw / 2, ih + 34, "file size, GiB", { "text-anchor": "middle" });
+    const sorted = [...pts].sort((a, b) => a.size - b.size);
+    el("path", { d: sorted.map((p, i) => (i ? "L" : "M") + x(p.size) + "," + y(p.kld)).join(""), fill: "none", stroke: css("--rule-strong"), "stroke-width": 1.5 }, g);
+    const labelPos = { "Q2_K": [8, 4, "start"], "Q3_K_M": [8, 4, "start"], "IQ4_XS": [-8, -8, "end"], "Q4_K_M": [8, -8, "start"], "Q5_K_M": [8, 4, "start"], "Q6_K": [8, 4, "start"], "Q8_0": [-8, -8, "end"] };
+    pts.forEach(p => {
+      const c = el("circle", { cx: x(p.size), cy: y(p.kld), r: 5, fill: css("--s2"), stroke: css("--surface"), "stroke-width": 2 }, g);
+      const lp = labelPos[p.q] || [8, 4, "start"];
+      txt(g, x(p.size) + lp[0], y(p.kld) + lp[1], p.q, { "text-anchor": lp[2], class: "lbl" });
+      const hit = el("circle", { cx: x(p.size), cy: y(p.kld), r: 14, fill: "transparent" }, g);
+      hit.addEventListener("mousemove", e => { c.setAttribute("r", 7); showTip(e, `<b>${p.q}</b><br>${fmt(p.size, 2)} GiB · mean KLD ${fmt(p.kld, 4)}<br>p99 KLD ${fmt(p.k99, 4)} · top-1 agree ${fmt(p.top)}%`); });
+      hit.addEventListener("mouseleave", () => { c.setAttribute("r", 5); hideTip(); });
+    });
+  }
+
+  // 3) Llama-2 Pareto scatter
+  function l2Pareto() {
+    const host = $("#c-l2-pareto"); const W = Math.max(300, host.clientWidth); const narrow = W < 560;
+    const H = narrow ? 300 : 340, m = { t: 14, r: narrow ? 16 : 120, b: 42, l: 58 };
+    const { g, iw, ih } = frame(host, W, H, m);
+    const xlo = 7.6, xhi = 10.8, ylo = 4.30, yhi = 4.38;
+    const x = v => ((v - xlo) / (xhi - xlo)) * iw, y = v => ih - ((v - ylo) / (yhi - ylo)) * ih;
+    [4.30, 4.32, 4.34, 4.36, 4.38].forEach(t => { el("line", { x1: 0, x2: iw, y1: y(t), y2: y(t), class: "grid" }, g); txt(g, -8, y(t) + 4, t.toFixed(2), { "text-anchor": "end" }); });
+    [8, 8.5, 9, 9.5, 10, 10.5].forEach(t => { txt(g, x(t), ih + 18, t, { "text-anchor": "middle" }); });
+    el("line", { x1: 0, x2: iw, y1: ih, y2: ih, class: "axis" }, g);
+    txt(g, iw / 2, ih + 34, "VRAM, GB (context = 1)", { "text-anchor": "middle" });
+    txt(g, -46, -4, "PPL", { "text-anchor": "start" });
+    const front = l2.filter(r => r.front).sort((a, b) => a.vram - b.vram);
+    el("path", { d: front.map((p, i) => (i ? "L" : "M") + x(p.vram) + "," + y(p.ppl)).join(""), fill: "none", stroke: css("--s1"), "stroke-width": 2, "stroke-linejoin": "round" }, g);
+    l2.forEach(p => {
+      const c = el("circle", { cx: x(p.vram), cy: y(p.ppl), r: p.front ? 5.5 : 4.5, fill: p.front ? css("--s1") : css("--ink-3"), stroke: css("--surface"), "stroke-width": 2 }, g);
+      const hit = el("circle", { cx: x(p.vram), cy: y(p.ppl), r: 12, fill: "transparent" }, g);
+      hit.addEventListener("mousemove", e => { c.setAttribute("r", 7); showTip(e, `<b>${p.name}</b><br>PPL ${fmt(p.ppl, 4)} · VRAM ${fmt(p.vram, 2)} GB<br>${fmt(p.tps, 1)} tok/s · load ${fmt(p.load, 1)} s${p.front ? "<br>on Pareto frontier" : ""}`); });
+      hit.addEventListener("mouseleave", () => { c.setAttribute("r", p.front ? 5.5 : 4.5); hideTip(); });
+    });
+    if (!narrow) {
+      // label frontier points on the right gutter-side with leader offsets
+      const lab = { "EXL2 4.000b": [-8, 16, "end"], "GPTQ 4bit g128 act": [8, 4, "start"], "EXL2 4.250b": [8, 4, "start"], "GGUF Q4_K_S": [8, 4, "start"], "EXL2 4.400b": [-8, 14, "end"], "GPTQ 4bit g32 act": [8, 4, "start"], "GGUF Q4_K_M": [8, 12, "start"], "EXL2 4.650b": [8, 4, "start"], "EXL2 4.900b": [8, 4, "start"] };
+      front.forEach(p => { const l = lab[p.name] || [8, 4, "start"]; txt(g, x(p.vram) + l[0], y(p.ppl) + l[1], p.name, { "text-anchor": l[2], class: "lbl" }); });
+      const awq = l2.find(r => r.name === "AWQ 4bit g32"); txt(g, x(awq.vram) - 8, y(awq.ppl) - 9, "AWQ 4bit g32", { "text-anchor": "end" });
+    }
+  }
+
+  // 4) LLaMA3 bits lines
+  function l3Bits() {
+    const host = $("#c-l3-bits"); const W = Math.max(300, host.clientWidth);
+    const methods = [["RTN", "var(--s1)"], ["GPTQ", "var(--s2)"], ["AWQ", "var(--s3)"], ["SliM-LLM", "var(--s4)"], ["QuIP", "var(--s5)"]];
+    const H = 280, m = { t: 14, r: 18, b: 40, l: 44 };
+    const { g, iw, ih } = frame(host, W, H, m);
+    const bits = [2, 3, 4]; const x = b => ((b - 2) / 2) * iw; const ylo = 30, yhi = 70; const y = v => ih - ((v - ylo) / (yhi - ylo)) * ih;
+    [30, 40, 50, 60, 70].forEach(t => { el("line", { x1: 0, x2: iw, y1: y(t), y2: y(t), class: "grid" }, g); txt(g, -8, y(t) + 4, t, { "text-anchor": "end" }); });
+    bits.forEach(b => txt(g, x(b), ih + 18, b + "-bit", { "text-anchor": b === 2 ? "start" : b === 4 ? "end" : "middle" }));
+    el("line", { x1: 0, x2: iw, y1: ih, y2: ih, class: "axis" }, g);
+    txt(g, iw / 2, ih + 34, "weight bits (group 128 where applicable)", { "text-anchor": "middle" });
+    el("line", { x1: 0, x2: iw, y1: y(68.6), y2: y(68.6), stroke: css("--ink-2"), "stroke-width": 1.5, "stroke-dasharray": "4 3" }, g);
+    txt(g, 4, y(68.6) - 6, "FP16 68.6", { class: "lbl" });
+    methods.forEach(([name, col]) => {
+      const pts = bits.map(b => ({ b, v: l3.find(r => r.m === name && r.w === b).avg }));
+      const color = css(col.slice(4, -1));
+      el("path", { d: pts.map((p, i) => (i ? "L" : "M") + x(p.b) + "," + y(p.v)).join(""), fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }, g);
+      pts.forEach(p => {
+        const c = el("circle", { cx: x(p.b), cy: y(p.v), r: 4.5, fill: color, stroke: css("--surface"), "stroke-width": 2 }, g);
+        const hit = el("circle", { cx: x(p.b), cy: y(p.v), r: 11, fill: "transparent" }, g);
+        hit.addEventListener("mousemove", e => { c.setAttribute("r", 6.5); showTip(e, `<b>${name} · ${p.b}-bit</b><br>avg ${fmt(p.v)} (${fmt(pct(p.v, 68.6))}% of FP16)`); });
+        hit.addEventListener("mouseleave", () => { c.setAttribute("r", 4.5); hideTip(); });
+      });
+    });
+    $("#lg-l3").innerHTML = methods.map(([n, c]) => `<span><i class="line" style="background:${c}"></i>${n}</span>`).join("") + `<span><i class="dash"></i>FP16</span>`;
+  }
+
+  // 5) Gemma MMLU vs disk
+  function gemmaChart() {
+    const host = $("#c-gemma"); const W = Math.max(300, host.clientWidth);
+    const H = 280, m = { t: 14, r: 18, b: 40, l: 44 };
+    const { g, iw, ih } = frame(host, W, H, m);
+    const xlo = 5, xhi = 28, ylo = 40, yhi = 75;
+    const x = v => ((v - xlo) / (xhi - xlo)) * iw, y = v => ih - ((v - ylo) / (yhi - ylo)) * ih;
+    [40, 50, 60, 70].forEach(t => { el("line", { x1: 0, x2: iw, y1: y(t), y2: y(t), class: "grid" }, g); txt(g, -8, y(t) + 4, t, { "text-anchor": "end" }); });
+    [5, 10, 15, 20, 25].forEach(t => txt(g, x(t), ih + 18, t, { "text-anchor": "middle" }));
+    el("line", { x1: 0, x2: iw, y1: ih, y2: ih, class: "axis" }, g);
+    txt(g, iw / 2, ih + 34, "disk size, GB", { "text-anchor": "middle" });
+    el("line", { x1: 0, x2: iw, y1: y(71.5), y2: y(71.5), stroke: css("--ink-2"), "stroke-width": 1.5, "stroke-dasharray": "4 3" }, g);
+    const series = [["a", "--s1", "from BF16"], ["b", "--s2", "from QAT"]];
+    series.forEach(([key, col, lab]) => {
+      const c = css(col);
+      el("path", { d: gemma.map((p, i) => (i ? "L" : "M") + x(p.gb) + "," + y(p[key])).join(""), fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" }, g);
+      gemma.forEach(p => {
+        const dot = el("circle", { cx: x(p.gb), cy: y(p[key]), r: 4, fill: c, stroke: css("--surface"), "stroke-width": 2 }, g);
+        const hit = el("circle", { cx: x(p.gb), cy: y(p[key]), r: 9, fill: "transparent" }, g);
+        hit.addEventListener("mousemove", e => { dot.setAttribute("r", 6); showTip(e, `<b>${p.q}</b> · ${lab}<br>MMLU ${fmt(p[key], 2)} (${fmt(pct(p[key], 71.5))}% of BF16)<br>${fmt(p.gb, 2)} GB`); });
+        hit.addEventListener("mouseleave", () => { dot.setAttribute("r", 4); hideTip(); });
+      });
+    });
+    const qc = el("circle", { cx: x(17.2), cy: y(70.64), r: 5.5, fill: css("--s3"), stroke: css("--surface"), "stroke-width": 2 }, g);
+    const qh = el("circle", { cx: x(17.2), cy: y(70.64), r: 11, fill: "transparent" }, g);
+    qh.addEventListener("mousemove", e => showTip(e, "<b>Google QAT</b><br>MMLU 70.64 · 17.2 GB"));
+    qh.addEventListener("mouseleave", hideTip);
+    [["IQ1_S", 41.87, 6.06, 8, 4, "start"], ["Q2_K_XL", 68.70, 9.95, 6, 16, "start"], ["Q4_K_M", 71.23, 15.41, 0, -10, "middle"]].forEach(([n, v, gb, dx, dy, a]) => txt(g, x(gb) + dx, y(v) + dy, n, { "text-anchor": a, class: "lbl" }));
+  }
+
+
+
+  /* ---------------- ENGINES ---------------- */
+  const engCols = ["vLLM", "SGLang", "TensorRT-LLM", "LMDeploy", "llama.cpp", "HF Transformers"];
+  const mx = [
+    ["FP8 weights + activations", [
+      ["y", "Ada, Hopper, AMD. On Ampere/Turing, FP8 checkpoints run weight-only through Marlin."],
+      ["y", "fp8 (online or offline), w8a8_fp8, modelopt_fp8 (Hopper SM90+)."],
+      ["y", "Per-tensor: Ada, Hopper, Blackwell. Block scaling: Hopper, Blackwell sm100/103. Not Ampere."],
+      ["n", "Not on the W4A16 page."],
+      ["n", "Not in the GGUF row."],
+      ["y", "FBGEMM_FP8 and FINEGRAINED_FP8 (CUDA, on the fly)."]]],
+    ["INT8 W8A8", [
+      ["y", "llm-compressor INT8: Turing to Hopper, x86 and Arm CPU."],
+      ["y", "w8a8_int8 (per-channel, per-token dynamic), blockwise_int8."],
+      ["n", "SmoothQuant INT8 is not on the current recipe list."],
+      ["p", "SmoothQuant W8A8 has its own docs page (not reviewed here)."],
+      ["a", "Q8_0 is 8-bit weight-only, not W8A8."],
+      ["y", "Via compressed-tensors checkpoints."]]],
+    ["INT4 W4A16 (GPTQ / AWQ)", [
+      ["y", "GPTQ Volta→Hopper; AWQ Turing→Hopper; Marlin kernels Turing→Hopper; also Intel GPU and x86 CPU."],
+      ["y", "awq_marlin, gptq_marlin. Plain gptq was removed on NVIDIA and AMD."],
+      ["y", "W4A16 AWQ and GPTQ: Ampere, Ada, Hopper, Blackwell sm100/103."],
+      ["y", "AWQ quantization plus GPTQ inference in TurboMind, V100 to Ada."],
+      ["a", "Uses its own 4-bit GGUF types (Q4_K_M, IQ4_XS)."],
+      ["y", "AWQ, GPT-QModel, compressed-tensors."]]],
+    ["INT4 weights, INT8/FP8 activations (W4A8)", [
+      ["p", "INT8 W4A8 listed for Arm CPU only."],
+      ["p", "mxfp_w4a8 on Ascend NPU."],
+      ["y", "W4A8 AWQ and GPTQ: Ada, Hopper, Blackwell. Not Ampere."],
+      ["n", ""], ["n", ""], ["n", ""]]],
+    ["FP4 (NVFP4 / MXFP4)", [
+      ["p", "Marlin FP4 kernels listed; MXFP4 Marlin not on Turing. The hardware table has no Blackwell column."],
+      ["y", "modelopt_fp4: native on Blackwell, Marlin W4A16 fallback on Ampere/Hopper. mxfp4 on AMD CDNA3/4."],
+      ["y", "NVFP4 and MXFP4 on Blackwell and Rubin only."],
+      ["n", ""], ["n", ""],
+      ["y", "NVFP4 via Hub kernels, CUDA."]]],
+    ["GGUF", [
+      ["y", "Volta→Hopper and AMD."],
+      ["y", "gguf."],
+      ["n", ""], ["n", ""],
+      ["y", "Native format: CPU, CUDA, Metal, Intel GPU."],
+      ["p", "Loads GGUF; not serializable back to GGUF (see the docs' notes)."]]],
+    ["bitsandbytes 4/8-bit", [
+      ["y", "Volta→Hopper."],
+      ["y", "bitsandbytes."],
+      ["n", ""], ["n", ""], ["n", ""],
+      ["y", "On the fly; PEFT fine-tuning; partial ROCm and Metal."]]],
+    ["Quantized KV cache", [
+      ["y", "Documented under Quantized KV Cache."],
+      ["n", "Not on the quantization page."],
+      ["y", "FP8 KV cache Ampere→Blackwell; NVFP4 KV cache sm100 only."],
+      ["p", "INT4/INT8 KV cache has its own docs page (not reviewed here)."],
+      ["n", "Not reviewed here."],
+      ["n", "Not in the overview table."]]],
+  ];
+  const stLabel = { y: ["yes", "Supported"], p: ["part", "Partial"], a: ["alt", "Own format"], n: ["na", "Not listed"] };
+  {
+    let h = `<thead><tr><th>Format</th>${engCols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>`;
+    mx.forEach(([fmtName, cells]) => {
+      h += `<tr><td class="wrap"><strong>${fmtName}</strong></td>` + cells.map(([st, note]) => `<td class="mx"><span class="st ${stLabel[st][0]}">${stLabel[st][1]}</span>${note ? `<span class="mx-note">${note}</span>` : ""}</td>`).join("") + `</tr>`;
+    });
+    $("#t-matrix").innerHTML = h + "</tbody>";
+  }
+  // computingforgeeks engines
+  const eng = [
+    { gpu: "RTX 4090 24GB", v: [54.3, 300, 8.6], l: [49.5, 306, 6.5], o: [39.9, 39, 101.7], om: 76.2 },
+    { gpu: "L40S 48GB", v: [43.7, 554, 3.0], l: [39.1, 241, 6.4], o: [20.0, 20, 200.3], om: 57.3 },
+    { gpu: "RTX 5090 32GB", v: [85.7, 936, 2.3], l: [77.8, 369, 6.6], o: [76.8, 74, 54.1], om: 129.7 },
+  ];
+  {
+    let h = `<thead><tr><th>GPU</th><th>Engine</th><th class="num">Single<br>tok/s</th><th class="num">TTFT @32<br>s</th></tr></thead><tbody>`;
+    eng.forEach(r => {
+      [["vLLM", r.v], ["llama.cpp", r.l], ["Ollama", r.o]].forEach(([n, d], i) => {
+        h += `<tr><td>${i === 0 ? r.gpu : ""}</td><td>${n}</td><td class="num">${fmt(d[0])}</td><td class="num">${fmt(d[2])}</td></tr>`;
+      });
+      h += `<tr><td></td><td>Ollama + MTP draft</td><td class="num">${fmt(r.om)}</td><td class="num"><span class="sub">not run</span></td></tr>`;
+    });
+    $("#t-eng").innerHTML = h + "</tbody>";
+  }
+  // Spheron
+  const sph = { conc: [1, 10, 50, 100], vllm: [120, 650, 1850, 2400], sgl: [125, 680, 1920, 2460], trt: [130, 710, 2100, 2780],
+    ttft: { vllm: ["45 / 68", "120 / 195", "380 / 720", "740 / 1,450"], sgl: ["42 / 61", "112 / 178", "360 / 680", "710 / 1,380"], trt: ["38 / 55", "105 / 170", "340 / 620", "680 / 1,280"] },
+    vram: { vllm: [71, 76, 78], sgl: [72, 75, 78], trt: [74, 77, 79] }, cold: { vllm: "≈62 s", sgl: "≈58 s", trt: "≈28 min build" } };
+  {
+    const names = [["vllm", "vLLM"], ["sgl", "SGLang"], ["trt", "TensorRT-LLM"]];
+    let h = `<thead><tr><th>Engine</th>${sph.conc.map(c => `<th class="num">TTFT<br>@${c}</th>`).join("")}<th class="num">VRAM idle<br>/ @100</th><th class="num">Cold<br>start</th></tr></thead><tbody>`;
+    names.forEach(([k, n]) => { h += `<tr><td>${n}</td>${sph.ttft[k].map(t => `<td class="num">${t}</td>`).join("")}<td class="num">${sph.vram[k][0]} / ${sph.vram[k][2]}</td><td class="num">${sph.cold[k]}</td></tr>`; });
+    $("#t-sph").innerHTML = h + "</tbody>";
+  }
+
+  /* ---------------- FORMAT VS COST (arXiv 2411.02355) ---------------- */
+  const rhAcc = [
+    // model, suite, BF16, W8A8-FP, W8A8-INT, W4A16-INT
+    ["8B", "Open LLM v1 avg", 74.06, 73.55, 74.29, 73.11],
+    ["8B", "Open LLM v2 avg", 27.6, 27.9, 28.0, 26.5],
+    ["8B", "Arena-Hard", 25.8, 26.8, 27.2, 24.0],
+    ["8B", "HumanEval pass@1", 67.3, 67.3, 67.1, 67.1],
+    ["8B", "HumanEval+ pass@1", 60.7, 61.3, 60.0, 59.1],
+    ["8B", "RULER", 82.8, 82.8, 82.8, 81.1],
+    ["70B", "Open LLM v1 avg", 84.40, 84.16, 84.29, 84.00],
+    ["70B", "Open LLM v2 avg", 41.7, 41.7, 40.5, 40.6],
+    ["70B", "Arena-Hard", 57.0, 57.7, 57.0, 56.3],
+    ["70B", "HumanEval pass@1", 79.7, 80.0, 78.7, 80.5],
+    ["70B", "HumanEval+ pass@1", 74.8, 75.0, 74.0, 74.2],
+    ["70B", "RULER", 83.3, 83.0, 82.5, 82.2],
+    ["405B", "Open LLM v1 avg", 86.79, 86.89, 86.20, 86.78],
+    ["405B", "Open LLM v2 avg", 48.7, 48.7, 47.9, 48.2],
+    ["405B", "Arena-Hard", 67.4, 66.9, 64.6, 66.5],
+    ["405B", "HumanEval pass@1", 86.8, 87.0, 86.9, 85.1],
+    ["405B", "HumanEval+ pass@1", 80.1, 81.0, 80.4, 78.9],
+  ];
+  {
+    let h = `<thead><tr><th>Model</th><th>Benchmark</th><th class="num">BF16</th><th class="num">W8A8-FP</th><th class="num">W8A8-INT</th><th class="num">W4A16-INT</th></tr></thead><tbody>`;
+    rhAcc.forEach((r, i) => {
+      const cell = (v) => { const rec = pct(v, r[2]); return `<td class="num heat" style="${heat(Math.min(rec, 100))}">${v} <span class="sub">${fmt(rec)}%</span></td>`; };
+      h += `<tr><td>${i === 0 || rhAcc[i - 1][0] !== r[0] ? `<strong>${r[0]}</strong>` : ""}</td><td>${r[1]}</td><td class="num">${r[2]}</td>${cell(r[3])}${cell(r[4])}${cell(r[5])}</tr>`;
+    });
+    $("#t-rh-acc").innerHTML = h + "</tbody>";
+  }
+  const rhLat = [
+    ["8B", [["BF16", "1× A6000", 24.5], ["INT8", "1× A6000", 15.9], ["INT4", "1× A6000", 9.7]]],
+    ["70B · A6000", [["BF16", "4× A6000", 61.7], ["INT8", "2× A6000", 63.4], ["INT4", "2× A6000", 39.2]]],
+    ["70B · A100", [["BF16", "2× A100", 50.7], ["INT8", "1× A100", 54.3], ["INT4", "1× A100", 35.0]]],
+    ["70B · H100", [["BF16", "2× H100", 31.3], ["FP8", "1× H100", 32.8], ["INT4", "1× H100", 28.6]]],
+    ["405B · A100", [["BF16", "16× A100", 81.9], ["INT8", "8× A100", 50.1], ["INT4", "4× A100", 48.9]]],
+    ["405B · H100", [["BF16", "16× H100", 50.6], ["FP8", "8× H100", 31.7], ["INT4", "4× H100", 37.5]]],
+  ];
+  {
+    let h = `<thead><tr><th>Model · GPU</th><th>Format</th><th>GPUs</th><th class="num">Latency s</th></tr></thead><tbody>`;
+    rhLat.forEach(([m, rows]) => rows.forEach((r, i) => { h += `<tr><td>${i === 0 ? `<strong>${m}</strong>` : ""}</td><td>${r[0]}</td><td>${r[1]}</td><td class="num">${fmt(r[2])}</td></tr>`; }));
+    $("#t-rh-lat").innerHTML = h + "</tbody>";
+  }
+
+  /* ---------------- TOOLKITS ---------------- */
+  const L = (t, u) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+  const U = { hf: "https://huggingface.co/docs/transformers/main/en/quantization/overview", vllm: "https://docs.vllm.ai/en/latest/features/quantization/", sgl: "https://docs.sglang.io/docs/advanced_features/quantization", trt: "https://nvidia.github.io/TensorRT-LLM/features/quantization.html", cfg: "https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#quantize-qwen3-5-9b-to-awq-gptq-and-fp8-with-llm-compressor", ar: "https://github.com/intel/auto-round", ud4: "https://unsloth.ai/blog/dynamic-4bit", uns: "https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs", ub: "https://unsloth.ai/docs/basics/unsloth-benchmarks", hfb: "https://huggingface.co/blog/overview-quantization-transformers" };
+  const tools = [
+    ["Unsloth", "Fine-tuning library; publishes Dynamic GGUF and dynamic bitsandbytes 4-bit checkpoints", "GGUF (UD-*), bnb 4-bit", "Per-layer type chosen by measured error; larger imatrix calibration set", "llama.cpp, Ollama (GGUF); SGLang lists Unsloth pre-quantized models", [L("dynamic GGUF", U.uns), L("dynamic 4-bit", U.ud4), L("SGLang", U.sgl)]],
+    ["llm-compressor", "vLLM project's quantization library", "compressed-tensors: GPTQ, AWQ, FP8, INT8 W8A8, W4A8", "GPTQ, AWQ need calibration; FP8 dynamic needs none", "vLLM, SGLang (compressed-tensors), Transformers", [L("vLLM", U.vllm), L("SGLang", U.sgl), L("cfg usage", U.cfg)]],
+    ["GPTQModel", "Maintained GPTQ implementation; AutoGPTQ's README points to it", "GPTQ 2/3/4/8-bit", "Calibration required", "vLLM, SGLang, Transformers (CPU, CUDA, ROCm, Metal, Intel)", [L("HF matrix", U.hf), L("vLLM", U.vllm), L("SGLang", U.sgl)]],
+    ["AutoRound (Intel)", "Sign-gradient-descent tuning of weight rounding", "Exports auto_round, auto_gptq, auto_awq, GGUF, llm-compressor; W2–W8, MXFP4/8, NVFP4, FP8", "Calibration required; README: a 7B model in about 10 minutes on one GPU", "SGLang (auto-round), Transformers, vLLM via exported formats", [L("README", U.ar), L("HF matrix", U.hf), L("SGLang", U.sgl)]],
+    ["bitsandbytes", "On-the-fly 4-bit (NF4/FP4) and 8-bit at load time", "4/8-bit; the HF matrix now lists it as serializable (the 2023 blog said 4-bit was not)", "None", "Transformers (PEFT/QLoRA), vLLM, SGLang", [L("HF matrix", U.hf), L("HF blog", U.hfb), L("vLLM", U.vllm)]],
+    ["NVIDIA ModelOpt", "NVIDIA's quantization toolkit for TensorRT-LLM", "FP8, NVFP4, MXFP4, W4A16/W4A8 AWQ, FP8/NVFP4 KV cache", "Calibration for most recipes", "TensorRT-LLM; SGLang modelopt (Hopper+); vLLM lists it", [L("TRT-LLM", U.trt), L("SGLang", U.sgl), L("vLLM", U.vllm)]],
+    ["torchao", "PyTorch-native quantization", "4/8-bit, on the fly", "None for basic recipes", "Transformers; vLLM lists TorchAO", [L("HF matrix", U.hf), L("vLLM", U.vllm)]],
+    ["HQQ", "Calibration-free half-quadratic quantization", "1–8 bit, on the fly; not serializable in Transformers", "None", "Transformers (PEFT supported)", [L("HF matrix", U.hf)]],
+    ["optimum-quanto", "Hugging Face's quantization backend", "2/4/8-bit, on the fly; not serializable", "None", "Transformers (CPU, CUDA, Metal, Intel GPU)", [L("HF matrix", U.hf)]],
+  ];
+  {
+    let h = `<thead><tr><th>Toolkit</th><th class="wrap">What it is</th><th class="wrap">Produces</th><th class="wrap">Calibration</th><th class="wrap">Runs in</th><th>Sources</th></tr></thead><tbody>`;
+    tools.forEach(r => { h += `<tr><td><strong>${r[0]}</strong></td><td class="wrap">${r[1]}</td><td class="wrap">${r[2]}</td><td class="wrap">${r[3]}</td><td class="wrap">${r[4]}</td><td class="wrap">${r[5].join(" · ")}</td></tr>`; });
+    $("#t-tools").innerHTML = h + "</tbody>";
+  }
+  const ud4 = [
+    ["Qwen2-VL-2B-Instruct", [["BF16", 4.11, "Correct"], ["bnb 4-bit, all layers", 1.36, "Wrong"], ["Unsloth dynamic 4-bit", 1.81, "Correct"]]],
+    ["Llama-3.2-11B-Vision-Instruct", [["16-bit", 19.87, "Correct"], ["4-bit, all layers", 6.54, "Partial: misses image purpose"], ["Unsloth dynamic 4-bit", 7.23, "Correct"]]],
+    ["Pixtral-12B", [["16-bit", 26.32, "Full analysis"], ["4-bit, all layers", 7.83, "Partial, no detailed analysis"], ["8-bit", 13.1, "Better than default 4-bit"], ["Unsloth dynamic 4-bit", 8.42, "Better, more X-ray analysis"]]],
+  ];
+  {
+    let h = `<thead><tr><th>Model</th><th>Format</th><th class="num">Size GB</th><th class="num">Extra over<br>bnb 4-bit</th><th>Output</th></tr></thead><tbody>`;
+    ud4.forEach(([m, rows]) => {
+      const bnb = rows.find(r => r[0].includes("all layers"))[1];
+      rows.forEach((r, i) => {
+        const extra = r[0].startsWith("Unsloth") ? `+${fmt(r[1] - bnb, 2)} GB (${Math.round(pct(r[1] - bnb, bnb))}%)` : "";
+        const bad = /Wrong|Partial/.test(r[2]);
+        h += `<tr><td>${i === 0 ? `<strong>${m}</strong>` : ""}</td><td>${r[0]}</td><td class="num">${fmt(r[1], 2)}</td><td class="num">${extra}</td><td>${bad ? `<span class="chip crit">${icon.x}${r[2]}</span>` : r[2]}</td></tr>`;
+      });
+    });
+    $("#t-ud4").innerHTML = h + "</tbody>";
+  }
+  const uctx = { vram: [8, 12, 16, 24, 40, 48, 80], uns: [2972, 21848, 40724, 78475, 153977, 191728, 342733], hf: [null, 932, 2551, 5789, 12264, 15502, 28454] };
+  $("#t-ub").innerHTML = `<thead><tr><th>Case</th><th class="num">Unsloth</th><th class="num">HF + FA2</th></tr></thead><tbody>
+    <tr><td>Llama 3.1 8B speed</td><td class="num">2×</td><td class="num">1×</td></tr>
+    <tr><td>Llama 3.1 8B VRAM reduction</td><td class="num">&gt;70%</td><td class="num">—</td></tr>
+    <tr><td>Llama 3.3 70B speed</td><td class="num">2×</td><td class="num">1×</td></tr>
+    <tr><td>Llama 3.3 70B VRAM reduction</td><td class="num">&gt;75%</td><td class="num">—</td></tr>
+    <tr><td>70B max context, 48 GB</td><td class="num">12,106</td><td class="num">OOM</td></tr>
+    <tr><td>70B max context, 80 GB A100</td><td class="num">89,389</td><td class="num">6,916</td></tr></tbody>`;
+
+  /* ---------------- HUGGING FACE ---------------- */
+  const hfCols = ["On the fly", "CPU", "CUDA", "ROCm", "Metal", "Intel GPU", "torch.compile", "Bits", "PEFT", "Serializable"];
+  const hfm = [
+    ["AQLM", "nyynnyy", "1/2", "yy"], ["AutoRound", "nyynnyn", "2/3/4/8", "ny"], ["AWQ", "nyyynyq", "4", "yy"],
+    ["bitsandbytes", "yyyppyy", "4/8", "yy"], ["compressed-tensors", "nyyynyn", "1/8", "yy"], ["EETQ", "ynynnnq", "8", "yy"],
+    ["Four Over Six", "yyynnny", "4", "ny"], ["FP-Quant", "ynynnny", "4", "ny"], ["GGUF / GGML", "nyynyyy", "1/8", "nn"],
+    ["GPT-QModel", "nyyyyyn", "2/3/4/8", "yy"], ["HIGGS", "ynynnny", "2/4", "ny"], ["HQQ", "yyynnyy", "1/8", "yn"],
+    ["Metal", "ynnnynn", "2/4/8", "ny"], ["NVFP4", "ynynnny", "4", "nn"], ["optimum-quanto", "yyynyyy", "2/4/8", "nn"],
+    ["SINQ", "yyypppp", "2/3/4/6/8", "ny"], ["FBGEMM_FP8", "ynynnnn", "8", "ny"], ["torchao", "yyynpy-", "4/8", "-m"],
+    ["VPTQ", "nnypnny", "1/8", "ny"], ["FINEGRAINED_FP8", "ynynnyn", "8", "ny"], ["SpQR", "nnynnny", "3", "ny"],
+    ["Quark", "nyyyyyq", "2/4/6/8/9/16", "nn"],
+  ];
+  const sym = (c) => ({ y: '<span class="sym y" title="supported">●</span>', n: '<span class="sym n" title="not supported">○</span>', p: '<span class="sym p" title="partial">◐</span>', q: '<span class="sym n" title="unknown">?</span>', "-": '<span class="sub">blank</span>', m: '<span class="sym p" title="mixed">●○</span>' }[c]);
+  {
+    let h = `<thead><tr><th>Method</th>${hfCols.map(c => `<th class="num">${c}</th>`).join("")}</tr></thead><tbody>`;
+    hfm.forEach(([n, a, bits, b]) => { h += `<tr><td>${n}</td>${[...a].map(c => `<td class="num">${sym(c)}</td>`).join("")}<td class="num">${bits}</td>${[...b].map(c => `<td class="num">${sym(c)}</td>`).join("")}</tr>`; });
+    $("#t-hfm").innerHTML = h + "</tbody>";
+  }
+  $("#t-hfb").innerHTML = `<thead><tr><th>Method</th><th class="num">ms/token<br>bs 1</th><th class="num">Peak MB<br>bs 1</th><th class="num">ms/token<br>bs 16</th><th class="num">Peak MB<br>bs 16</th><th class="num">Load s</th></tr></thead><tbody>
+    <tr class="ref"><td>FP16</td><td class="num">36.96</td><td class="num">29,153</td><td class="num">69.94</td><td class="num">53,987</td><td class="num">26.0</td></tr>
+    <tr><td>GPTQ 4-bit</td><td class="num">33.71</td><td class="num">10,484</td><td class="num">95.41</td><td class="num">34,777</td><td class="num">36.2</td></tr>
+    <tr><td>bitsandbytes 4-bit</td><td class="num">52.00</td><td class="num">11,018</td><td class="num">113.98</td><td class="num">35,532</td><td class="num">37.64</td></tr></tbody>`;
+  $("#t-hfq").innerHTML = `<thead><tr><th>Checkpoint</th><th class="num">Avg</th><th class="num">ARC</th><th class="num">HellaSwag</th><th class="num">MMLU</th><th class="num">TruthfulQA</th></tr></thead><tbody>
+    <tr class="ref"><td>Llama-2-7B</td><td class="num">54.32</td><td class="num">53.07</td><td class="num">78.59</td><td class="num">46.87</td><td class="num">38.76</td></tr>
+    <tr><td>7B bnb 4-bit</td><td class="num">53.40</td><td class="num">53.07</td><td class="num">77.74</td><td class="num">43.80</td><td class="num">38.98</td></tr>
+    <tr><td>7B GPTQ</td><td class="num">53.23</td><td class="num">52.05</td><td class="num">77.59</td><td class="num">43.99</td><td class="num">39.32</td></tr>
+    <tr class="ref"><td>Llama-2-13B</td><td class="num">58.66</td><td class="num">59.39</td><td class="num">82.13</td><td class="num">55.74</td><td class="num">37.38</td></tr>
+    <tr><td>13B GPTQ g128 act-order</td><td class="num">58.03</td><td class="num">59.13</td><td class="num">81.48</td><td class="num">54.45</td><td class="num">37.07</td></tr>
+    <tr><td>13B GPTQ (default)</td><td class="num">57.56</td><td class="num">57.25</td><td class="num">81.66</td><td class="num">54.81</td><td class="num">36.56</td></tr>
+    <tr><td>13B bnb 4-bit</td><td class="num">56.90</td><td class="num">58.11</td><td class="num">80.97</td><td class="num">54.34</td><td class="num">34.17</td></tr></tbody>`;
+
+  /* ---------------- NEW CHARTS ---------------- */
+  function linesCat(sel, cfg) {
+    const host = $(sel); const W = Math.max(300, host.clientWidth);
+    const H = 280, m = { t: 16, r: 18, b: 40, l: 54 };
+    const { g, iw, ih } = frame(host, W, H, m);
+    const n = cfg.x.length; const x = i => (n === 1 ? iw / 2 : (i / (n - 1)) * iw);
+    const tr = cfg.log ? (v => Math.log10(v)) : (v => v);
+    const lo = tr(cfg.yMin), hi = tr(cfg.yMax); const y = v => ih - ((tr(v) - lo) / (hi - lo)) * ih;
+    cfg.yTicks.forEach(t => { el("line", { x1: 0, x2: iw, y1: y(t), y2: y(t), class: "grid" }, g); txt(g, -8, y(t) + 4, cfg.yFmt(t), { "text-anchor": "end" }); });
+    cfg.x.forEach((lab, i) => txt(g, x(i), ih + 18, lab, { "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle" }));
+    el("line", { x1: 0, x2: iw, y1: ih, y2: ih, class: "axis" }, g);
+    txt(g, iw / 2, ih + 34, cfg.xTitle, { "text-anchor": "middle" });
+    cfg.series.forEach(se => {
+      const c = css(se.color); const pts = se.values.map((v, i) => [i, v]).filter(p => p[1] != null);
+      el("path", { d: pts.map((p, k) => (k ? "L" : "M") + x(p[0]) + "," + y(p[1])).join(""), fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" }, g);
+      pts.forEach(p => {
+        const dot = el("circle", { cx: x(p[0]), cy: y(p[1]), r: 4.5, fill: c, stroke: css("--surface"), "stroke-width": 2 }, g);
+        const hit = el("circle", { cx: x(p[0]), cy: y(p[1]), r: 11, fill: "transparent" }, g);
+        hit.addEventListener("mousemove", e => { dot.setAttribute("r", 6.5); showTip(e, `<b>${se.name}</b> · ${cfg.xTip(cfg.x[p[0]])}<br>${cfg.tip(p[1])}`); });
+        hit.addEventListener("mouseleave", () => { dot.setAttribute("r", 4.5); hideTip(); });
+      });
+      if (se.endLabel) { const lp = pts[pts.length - 1]; txt(g, x(lp[0]) - 6, y(lp[1]) + (se.dy || -8), se.endLabel, { "text-anchor": "end", class: "lbl" }); }
+    });
+    (cfg.notes || []).forEach(nt => txt(g, x(nt.i) + (nt.dx || 6), y(nt.v) + (nt.dy || 4), nt.t, { "text-anchor": nt.a || "start" }));
+  }
+  function engBars() {
+    const host = $("#c-eng32"); const W = Math.max(300, host.clientWidth); const narrow = W < 460;
+    const m = { t: 8, r: 46, b: 26, l: narrow ? 70 : 92 };
+    const groupH = 84, H = m.t + m.b + eng.length * groupH;
+    const { g, iw } = frame(host, W, H, m);
+    const max = 1000; const x = v => (v / max) * iw;
+    [0, 250, 500, 750, 1000].forEach(t => { el("line", { x1: x(t), x2: x(t), y1: 0, y2: eng.length * groupH, class: "grid" }, g); txt(g, x(t), eng.length * groupH + 16, t, { "text-anchor": "middle" }); });
+    eng.forEach((r, gi) => {
+      const y0 = gi * groupH + 6;
+      txt(g, -8, y0 + 38, r.gpu.split(" ").slice(0, 2).join(" "), { "text-anchor": "end", class: "lbl" });
+      [["vLLM", r.v[1], "--s1"], ["llama.cpp", r.l[1], "--s2"], ["Ollama", r.o[1], "--s3"]].forEach(([n, v, col], k) => {
+        const y = y0 + k * 24, bh = 18;
+        const bar = el("rect", { x: 0, y, width: Math.max(2, x(v)), height: bh, rx: 3, fill: css(col) }, g);
+        txt(g, x(v) + 6, y + bh / 2 + 4, String(v), { class: "lbl" });
+        const hit = el("rect", { x: 0, y, width: iw, height: bh + 4, fill: "transparent" }, g);
+        hit.addEventListener("mousemove", e => { bar.setAttribute("opacity", ".75"); showTip(e, `<b>${n}</b> · ${r.gpu}<br>${v} tok/s at 32 concurrent`); });
+        hit.addEventListener("mouseleave", () => { bar.setAttribute("opacity", "1"); hideTip(); });
+      });
+    });
+  }
+  function sphChart() {
+    linesCat("#c-sph", { x: sph.conc.map(String), xTitle: "concurrent requests", xTip: v => `${v} concurrent`, yMin: 0, yMax: 3000, yTicks: [0, 1000, 2000, 3000], yFmt: v => v.toLocaleString(), tip: v => `${v.toLocaleString()} tok/s`,
+      series: [{ name: "vLLM", color: "--s1", values: sph.vllm, endLabel: "vLLM 2,400", dy: 16 }, { name: "SGLang", color: "--s4", values: sph.sgl }, { name: "TensorRT-LLM", color: "--s7", values: sph.trt, endLabel: "TRT-LLM 2,780", dy: -10 }] });
+  }
+  function uctxChart() {
+    linesCat("#c-uctx", { x: uctx.vram.map(v => v + " GB"), xTitle: "GPU memory", xTip: v => v, yMin: 500, yMax: 500000, log: true, yTicks: [1000, 10000, 100000], yFmt: v => (v >= 1000 ? (v / 1000) + "K" : v), tip: v => `${v.toLocaleString()} tokens`,
+      series: [{ name: "Unsloth", color: "--s1", values: uctx.uns, endLabel: "342,733", dy: -10 }, { name: "HF + FA2", color: "--s2", values: uctx.hf, endLabel: "28,454", dy: 18 }],
+      notes: [{ i: 0, v: 700, t: "HF: OOM at 8 GB", dx: 4, dy: -4 }] });
+  }
+
+  /* ---------------- GLOSSARY ---------------- */
+  const A = (id) => "https://arxiv.org/abs/" + id;
+  const R = {
+    lcq: ["llama.cpp quantize README", "https://github.com/ggml-org/llama.cpp/blob/master/tools/quantize/README.md"],
+    lcp: ["llama.cpp perplexity README", "https://github.com/ggml-org/llama.cpp/blob/master/tools/perplexity/README.md"],
+    vfp8: ["vLLM FP8 docs", "https://docs.vllm.ai/en/latest/features/quantization/fp8/"],
+    vq: ["vLLM quantization docs", "https://docs.vllm.ai/en/latest/features/quantization/"],
+    sg: ["SGLang quantization docs", "https://docs.sglang.io/docs/advanced_features/quantization"],
+    trt: ["TensorRT-LLM quantization docs", "https://nvidia.github.io/TensorRT-LLM/features/quantization.html"],
+    hf: ["Transformers quantization overview", "https://huggingface.co/docs/transformers/main/en/quantization/overview"],
+    cfg: ["computingforgeeks quant test", "https://computingforgeeks.com/gguf-vs-awq-vs-gptq/"],
+    cfge: ["computingforgeeks engine test", "https://computingforgeeks.com/ollama-vs-vllm-vs-llama-cpp/"],
+    rh: ["Kurtic et al., arXiv 2411.02355", A("2411.02355")],
+    l3: ["Huang et al., arXiv 2404.14047", A("2404.14047")],
+  };
+  const G = [
+    { id: "g-formats", name: "Number formats and notation", intro: "How bit widths, scales and groups are written.", items: [
+      ["BF16 / FP16", "full precision, baseline", "16-bit floating point. BF16 keeps FP32's 8-bit exponent with a 7-bit mantissa, so it has the same range with less precision. FP16 has a 5-bit exponent and 10-bit mantissa. Every quantized result is measured against one of these.", "Rows marked “baseline” in each table.", ["Kalamkar et al., BF16 study", A("1905.12322")]],
+      ["FP8 (E4M3)", "FP8 dynamic", "8-bit float with 4 exponent and 3 mantissa bits. In “FP8 dynamic”, weights are converted offline with per-channel scales and activations are scaled per token at runtime, so no calibration data is needed. Native FP8 matmuls need compute capability 8.9 or newer; on Ampere, vLLM runs FP8 checkpoints as weight-only W8A16.", "Qwen3.5-9B: lossless on GSM8K, 1.76× faster latency than BF16 on an A10G.", R.vfp8],
+      ["WxAy", "W4A16, W8A16, W8A8, W4A4", "Bit widths for weights (W) and activations (A). W4A16 stores 4-bit weights and dequantizes them to 16-bit inside the matmul. W8A8 quantizes both, so the matmul itself runs in INT8 or FP8.", "LLaMA3-8B table W and A columns; the format-vs-cost section.", R.rh],
+      ["Weight-only vs weight-and-activation", "", "Weight-only quantization cuts memory and speeds up decode, which is limited by reading weights. Quantizing activations as well speeds up the compute-bound prefill too, but activations have large per-channel outliers, so it fails sooner at low bits.", "SmoothQuant W4A4 collapses while weight-only 4-bit methods keep about 98%.", ["SmoothQuant paper", A("2211.10438")]],
+      ["Bits per weight (bpw)", "", "Average storage per parameter, including scales, zero-points and any tensors kept at higher precision. A “4-bit” format is rarely exactly 4.0.", "EXL2 names such as 4.650b are bpw targets.", R.lcq],
+      ["Group size", "g32, g128, per-channel", "How many consecutive weights share one scale (and zero-point). Smaller groups track local ranges more closely and lose less accuracy, at the cost of more metadata. “—” in the group column means one scale per output channel.", "Llama-2-13B: g32 beats g128 on perplexity but uses about 0.8 GB more VRAM.", ["GPTQ paper", A("2210.17323")]],
+      ["Symmetric / asymmetric", "zero-point, _ASYM", "Symmetric quantization maps a range centred on zero and stores only a scale. Asymmetric adds a zero-point so the grid can be shifted to fit skewed weight ranges.", "AWQ above uses W4A16_ASYM; GPTQ uses symmetric W4A16.", ["llm-compressor", "https://github.com/vllm-project/llm-compressor"]],
+      ["Calibration data", "", "A small unlabeled sample, typically 128–512 sequences, run through the model so the quantizer can measure activations. GPTQ, AWQ, EXL2 and imatrix need it; RTN and FP8 dynamic do not.", "Qwen: 256 samples of perfectblend at 2,048 tokens. LLaMA3: 128 WikiText2 samples.", R.cfg],
+      ["PTQ vs QAT", "post-training, quantization-aware training", "PTQ quantizes a finished model without training. QAT fine-tunes with simulated quantization in the forward pass, so the weights adapt to the low-precision grid before export.", "Gemma 3 27B: Google's QAT checkpoint vs Unsloth's PTQ quants.", ["LLM-QAT paper", A("2305.17888")]],
+      ["NVFP4 / MXFP4", "FP4, microscaling", "4-bit floating-point formats with a shared scale per small block of values. NVFP4 is NVIDIA's variant; MXFP4 follows the OCP microscaling spec. Native FP4 matmuls need Blackwell; engines fall back to weight-only kernels on older GPUs.", "Engine matrix, FP4 row.", R.trt, [["Microscaling formats paper", A("2310.10537")]]],
+    ]},
+    { id: "g-methods", name: "Quantization methods", intro: "Algorithms that decide how each weight is rounded.", items: [
+      ["RTN", "round-to-nearest", "Rounds each weight to the nearest grid point, using the min/max of its group to set scale and zero-point. No calibration and no error correction.", "LLaMA3-8B: fine at 8-bit, loses 4.7 points at 4-bit, collapses at 3-bit.", ["Nagel et al., AdaRound (discusses RTN)", A("2004.10568")]],
+      ["GPTQ", "act-order, desc_act", "Layer-wise PTQ that minimizes the layer's output error on calibration inputs. It quantizes one weight column at a time and redistributes that column's rounding error onto the columns not yet quantized, using the inverse Hessian built from the calibration activations. Act-order processes columns by descending Hessian diagonal.", "Produced in 433 s on Qwen3.5-9B, peaking at 4.7 GiB GPU memory.", ["GPTQ paper", A("2210.17323")]],
+      ["AWQ", "activation-aware weight quantization", "Finds the small fraction of input channels that carry large activations and scales those weights up before quantizing, with the inverse scale folded into the previous operation. The per-layer scale comes from a grid search; there is no backprop or error redistribution.", "Best 4-bit average on LLaMA3-8B; on Qwen3.5-9B it broke the GSM8K answer format most often.", ["AWQ paper", A("2306.00978")]],
+      ["SmoothQuant", "", "Enables W8A8 by moving activation outliers into the weights. Each input channel is divided by a smoothing factor on the activation side and multiplied by it on the weight side, leaving the product unchanged and flattening activations.", "Lossless at W8A8, usable at W6A6, collapses at W4A4.", ["SmoothQuant paper", A("2211.10438")]],
+      ["QuIP", "incoherence processing", "Multiplies weights and the Hessian by random orthogonal matrices so no single weight is an outlier, then rounds with an adaptive scheme (LDLQ). Built for 2–3 bits.", "Best 3-bit WikiText2 perplexity on LLaMA3-8B (7.5).", ["QuIP paper", A("2307.13304")]],
+      ["SliM-LLM", "salience-driven mixed precision", "Gives more bits to salient weight groups and fewer to the rest, keeping the average bit width fixed.", "The only method whose 2-bit LLaVA-Next model still produced answers.", ["SliM-LLM paper", A("2405.14917")]],
+      ["OmniQuant", "", "Learns clipping thresholds and equivalent scaling transforms block by block with gradient descent. Accurate but slow to produce.", "307 minutes to quantize LLaMA3-8B, versus 10–19 for AWQ and GPTQ.", ["OmniQuant paper", A("2308.13137")]],
+      ["PB-LLM, BiLLM, DB-LLM", "binarized LLMs", "Ultra-low-bit methods. PB-LLM keeps a small share of salient weights at higher precision and binarizes the rest. BiLLM binarizes salient weights with a residual pass and splits the rest, averaging about 1.1 bits. DB-LLM splits weights into two binary matrices and adds distillation.", "DB-LLM is the best 2-bit result on LLaMA3-8B at 51.8.", ["BiLLM", A("2402.04291")], [["PB-LLM", A("2310.00034")], ["DB-LLM", A("2402.11960")]]],
+      ["AutoRound", "signed gradient descent", "Tunes the rounding of each weight with sign-gradient descent on calibration data, then exports to several formats (GPTQ, AWQ, GGUF, its own).", "Toolkits table.", ["AutoRound paper", A("2309.05516")], [["intel/auto-round", "https://github.com/intel/auto-round"]]],
+      ["bitsandbytes 4-bit", "load_in_4bit, NF4, FP4", "Quantizes FP16 weights to 4 bits on the fly while loading, with no calibration. NF4 places its 16 levels at quantiles of a normal distribution; it is the format QLoRA trains on.", "Slowest decode in the Llama-2-13B table (23 tok/s); 52 ms/token vs GPTQ's 33.7 in the HF blog.", ["QLoRA paper", A("2305.14314")]],
+      ["QLoRA", "", "Fine-tuning LoRA adapters on top of a frozen base model held in 4-bit NF4. Cuts training memory enough to fine-tune large models on one GPU.", "Unsloth fine-tuning section.", ["QLoRA paper", A("2305.14314")]],
+    ]},
+    { id: "g-runtimes", name: "File formats, kernels and toolkits", intro: "Where quantized weights live and what produces them.", items: [
+      ["GGUF", "llama.cpp, Ollama, LM Studio", "llama.cpp's single-file format holding weights, tokenizer and metadata. Each tensor can use a different quant type. Runs on CPU, GPU, or split across both.", "Qwen3.5-9B GGUF ladder; Gemma 3 27B; engine benchmarks.", ["Hugging Face GGUF docs", "https://huggingface.co/docs/hub/gguf"]],
+      ["K-quants", "Q2_K … Q6_K, _S / _M / _L", "Block formats using super-blocks of 256 weights split into sub-blocks whose scales are themselves quantized. The _S, _M and _L suffixes control how many sensitive tensors are promoted to a higher-bit type.", "Q4_K_M on Qwen3.5-9B: 5.37 GiB, 92.5% top-1 agreement.", ["llama.cpp PR #1684 (k-quants)", "https://github.com/ggml-org/llama.cpp/pull/1684"]],
+      ["Q8_0, Q4_0", "legacy quants", "Older llama.cpp formats with blocks of 32 weights and one FP16 scale per block. Q8_0 is effectively lossless.", "Q8_0 on Qwen3.5-9B: mean KLD 0.0017, GSM8K 87.6.", R.lcq],
+      ["I-quants", "IQ1_S … IQ4_XS", "llama.cpp formats with non-uniform grids. The low-bit types use lattice-based codebooks; IQ4_XS uses a non-linear 4-bit grid. They rely on an imatrix.", "IQ4_XS beat Q4_K_M on KLD and GSM8K while being smaller.", R.lcq],
+      ["imatrix", "importance matrix", "Per-channel importance computed from activations on calibration text. The quantizer minimizes importance-weighted rounding error instead of plain error.", "Removing it raised Q4_K_M's mean KLD by 68% at identical size and speed.", ["llama.cpp PR #4861 (imatrix)", "https://github.com/ggml-org/llama.cpp/pull/4861"]],
+      ["Unsloth Dynamic", "UD-…, _XL, dynamic 4-bit", "Unsloth's quants that choose precision per layer from measured sensitivity. For GGUF it picks quant types per layer; for bitsandbytes it leaves the most error-prone layers in 16-bit.", "Gemma 3 27B tables; VLM dynamic 4-bit table.", ["Unsloth docs", "https://unsloth.ai/docs/basics/unsloth-dynamic-2.0-ggufs"], [["Unsloth dynamic 4-bit", "https://unsloth.ai/blog/dynamic-4bit"]]],
+      ["EXL2", "ExLlamaV2, head_bits", "ExLlamaV2's format. Uses GPTQ-style error correction but mixes bit widths within and across layers to hit any fractional bpw target.", "Llama-2-13B: fastest decode in the main table.", ["ExLlamaV2", "https://github.com/turboderp/exllamav2"]],
+      ["llm-compressor", "compressed-tensors", "The vLLM project's quantization library and its checkpoint format. Produces GPTQ, AWQ, FP8 and W8A8 checkpoints that vLLM and SGLang load directly; replaces the archived AutoGPTQ and AutoAWQ.", "Every Qwen3.5-9B vLLM checkpoint.", ["llm-compressor", "https://github.com/vllm-project/llm-compressor"]],
+      ["GPTQModel", "GPT-QModel", "The maintained GPTQ implementation, recommended by the archived AutoGPTQ project. Loads in Transformers, vLLM and SGLang.", "Toolkits table; HF matrix.", R.hf],
+      ["NVIDIA ModelOpt", "Model Optimizer", "NVIDIA's quantization toolkit. Produces FP8, NVFP4 and AWQ checkpoints that TensorRT-LLM runs directly and SGLang can load.", "Engine matrix; toolkits table.", R.trt],
+      ["torchao, HQQ, optimum-quanto", "", "Calibration-free, on-the-fly quantization backends usable from Transformers. torchao is PyTorch-native; HQQ supports 1–8 bit with PEFT; quanto is Hugging Face's own.", "HF compatibility matrix.", R.hf],
+      ["Marlin", "Machete", "CUDA kernels that multiply low-bit weights (INT4, FP8, FP4) by FP16 activations efficiently on Ampere and newer.", "Why GPTQ and AWQ ran at identical speed in vLLM: same kernel.", ["MARLIN paper", A("2408.11743")]],
+      ["Embedding and lm_head", "token_embd, output", "The input embedding and output projection, each sized vocabulary × hidden dimension. vLLM quant recipes usually leave both in BF16; GGUF quantizes them.", "Qwen3.5-9B's 248K vocabulary makes each about 1.9 GiB, so W4A16 used 7.3 GiB and Q4_K_M 5.4 GiB.", ["computingforgeeks, size explanation", "https://computingforgeeks.com/gguf-vs-awq-vs-gptq/#why-a-4-bit-awq-checkpoint-is-bigger-than-a-4-bit-gguf"]],
+    ]},
+    { id: "g-engines", name: "Serving engines", intro: "The runtimes compared in Part 2.", items: [
+      ["vLLM", "PagedAttention", "Open-source serving engine built around paged KV-cache memory and continuous batching. Loads compressed-tensors, GPTQ, AWQ, FP8, GGUF and bitsandbytes checkpoints.", "Engine matrix and both engine benchmarks.", ["PagedAttention paper", A("2309.06180")], [R.vq]],
+      ["SGLang", "", "Serving engine with a radix-tree prefix cache and its own scheduler. Reads the quantization method from the checkpoint config; online FP8 is available.", "Spheron benchmark; Qwen2.5-VL quant caveat.", R.sg, [["SGLang paper (RadixAttention)", A("2312.07104")]]],
+      ["TensorRT-LLM", "trtllm-build", "NVIDIA's engine. Historically compiles a model into a GPU-specific engine before serving (about 28 minutes for 70B FP8 in the Spheron test); newer versions add a PyTorch backend.", "Fastest at 100 concurrent in the Spheron test.", R.trt],
+      ["LMDeploy", "TurboMind", "Serving toolkit whose TurboMind engine runs 4-bit AWQ and GPTQ models from V100 to Ada.", "BentoML 2024 found it fastest on 4-bit Llama-3-70B.", ["LMDeploy W4A16 docs", "https://lmdeploy.readthedocs.io/en/latest/quantization/w4a16.html"]],
+      ["llama.cpp / Ollama", "llama-server", "llama.cpp is the C/C++ GGUF runtime; Ollama wraps it with model management. Without its speculative draft, Ollama's throughput did not rise with concurrency in the Oct 2026 test (39 tok/s at both 1 and 32 requests on an RTX 4090).", "Ollama: 74 tok/s at 32 concurrent on an RTX 5090, vs 936 for vLLM.", R.cfge],
+      ["Continuous batching", "", "Adding and removing requests from the running batch at each decode step, so the GPU stays busy under many concurrent users. The main reason server engines scale with concurrency while single-user runtimes do not.", "Engine throughput chart.", ["PagedAttention paper", A("2309.06180")]],
+      ["Prefix caching", "radix cache", "Reusing the KV cache of a prompt prefix already seen, so repeated system prompts skip prefill.", "It flattered llama.cpp's TTFT in the engine benchmark.", R.cfge],
+      ["Speculative decoding / MTP", "draft model, multi-token prediction", "A cheap draft proposes several tokens that the main model verifies in one pass, raising single-stream speed. MTP uses extra prediction heads built into the model as the draft.", "vLLM with MTP: 85.7 → 135.3 tok/s single stream on an RTX 5090.", R.cfge],
+      ["Tensor parallelism", "TP", "Splitting each weight matrix across several GPUs. Quantization often lets a model fit on fewer GPUs, removing inter-GPU communication.", "70B on 1× H100 in FP8 vs 2× H100 in BF16.", R.rh],
+    ]},
+    { id: "g-quality", name: "Quality metrics", intro: "How closeness to the full-precision model is measured.", items: [
+      ["Perplexity (PPL)", "context, stride", "exp of the mean negative log-likelihood per token on held-out text. Lower is better. Depends on tokenizer and text, so comparable only within one model. Long texts are scored with a sliding window of the given context length, moved by the stride.", "Llama-2-13B: wikitext, context 4,096, stride 512.", ["HF docs, perplexity of fixed-length models", "https://huggingface.co/docs/transformers/perplexity"]],
+      ["WikiText-2, C4, PTB", "", "Standard perplexity corpora: cleaned Wikipedia articles, filtered Common Crawl web text, and Penn Treebank newswire.", "LLaMA3-8B Wiki2 and C4 columns.", ["WikiText paper", A("1609.07843")], [["C4 (T5 paper)", A("1910.10683")]]],
+      ["KL divergence (mean KLD)", "", "For each token, KL(P_BF16 ‖ P_quant) over the full next-token distribution, then averaged. 0 means identical. Catches drift that leaves perplexity and the argmax unchanged.", "Effectively lossless Q8_0 and Q6_K sit below 0.01; Q2_K reached 0.228.", R.lcp],
+      ["p99 KLD", "", "The 99th percentile of per-token KLD: how bad the worst 1% of tokens get.", "Qwen Q2_K: p99 is 7× Q4_K_M's.", R.lcp],
+      ["Top-1 agreement", "same top token", "Share of positions where the quantized model's most likely next token equals the BF16 model's. A proxy for how often greedy decoding diverges.", "Q4_K_M: 92.5%, so about one token in 13 differs.", R.lcp],
+      ["RMS Δp", "", "Root-mean-square change in the probability assigned to the actual next token, quantized versus BF16.", "5.0% for Q4_K_M on Qwen3.5-9B.", R.lcp],
+      ["Retained / recovery", "% of baseline", "Quantized score divided by the full-precision score. Computed on this page; the blue shading scales with it.", "Every Retained column.", R.rh],
+      ["Pareto frontier", "", "Configurations that no other configuration beats on both axes at once.", "Llama-2-13B perplexity-vs-VRAM chart.", ["oobabooga, Pareto frontiers", "https://oobabooga.github.io/blog/posts/gptq-awq-exl2-llamacpp/#pareto-frontiers"]],
+      ["Chance level and collapse", "", "The score from random guessing: 25% on 4-choice tasks, 50% on 2-choice. On this page “collapsed” means perplexity above 100 or a 5-task average below 40.", "Chance on the LLaMA3 5-task average is about 35.", R.l3],
+    ]},
+    { id: "g-bench", name: "Benchmarks", intro: "What each task tests and how it is scored.", items: [
+      ["lm-evaluation-harness", "lm-eval", "EleutherAI's framework for running benchmarks with fixed prompts and scoring.", "Used by the Qwen, LLaMA3 and Red Hat studies.", ["lm-evaluation-harness", "https://github.com/EleutherAI/lm-evaluation-harness"]],
+      ["Zero-shot / few-shot", "0-shot, 5-shot", "The number of solved examples placed in the prompt before the question.", "GSM8K and MMLU are 5-shot; the LLaMA3 commonsense tasks are zero-shot.", ["GPT-3 paper", A("2005.14165")]],
+      ["Likelihood-scored vs generative", "", "Multiple-choice tasks compare the log-probability of each option, so nothing is generated. Generative tasks require the model to write an answer that is parsed. Quantization damage shows up more in generative tasks.", "GSM8K dropped 6–12 points under W4A16 while MMLU-style scores barely moved.", R.cfg],
+      ["GSM8K", "strict-match, flexible-extract", "Grade-school math word problems; 1,319 in the test split. Strict-match only accepts the “#### N” answer format; flexible-extract takes the last number in the output.", "A large strict-vs-flexible gap means the model solves problems but breaks format.", ["GSM8K paper", A("2110.14168")]],
+      ["MMLU", "5-shot", "About 14,000 four-choice questions across 57 subjects. Chance is 25%.", "Gemma 3 27B ladder; HF blog scores.", ["MMLU paper", A("2009.03300")]],
+      ["PIQA", "", "Physical commonsense: pick which of two solutions achieves a goal. Chance 50%.", "LLaMA3 table.", ["PIQA paper", A("1911.11641")]],
+      ["ARC-Easy / ARC-Challenge", "ARC-e, ARC-c", "Grade-school science questions with four choices. Challenge holds questions that simple retrieval and co-occurrence methods got wrong.", "ARC-e and ARC-c lose the most under RTN and GPTQ in the LLaMA3 table.", ["ARC paper", A("1803.05457")]],
+      ["HellaSwag", "", "Pick the most plausible continuation of a scene from four options, adversarially filtered.", "", ["HellaSwag paper", A("1905.07830")]],
+      ["Winogrande", "Wino", "Fill a blank, usually resolving which of two entities a phrase refers to. Chance 50%.", "", ["WinoGrande paper", A("1907.10641")]],
+      ["CommonsenseQA average", "5-task avg", "On this page, the mean of PIQA, ARC-e, ARC-c, HellaSwag and Winogrande, as the LLaMA3 study reports it. Not the separate CommonsenseQA dataset.", "FP16 LLaMA3-8B: 68.6.", R.l3],
+      ["Open LLM Leaderboard v1 / v2", "", "Hugging Face's leaderboard suites. v1 averaged ARC, HellaSwag, MMLU, TruthfulQA, Winogrande and GSM8K; v2 uses harder tasks, so scores are much lower.", "Format-vs-cost table; HF blog scores.", ["Open LLM Leaderboard", "https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard"]],
+      ["Arena-Hard", "", "Hard user prompts answered by the model and judged against a reference model by an LLM judge; reported as win rate.", "Llama 3.1 8B W4A16: 24.0 vs 25.8 BF16.", ["Arena-Hard paper", A("2406.11939")]],
+      ["HumanEval / HumanEval+", "pass@1", "Python function-writing problems scored by running unit tests; HumanEval+ adds many more tests per problem.", "Format-vs-cost table.", ["HumanEval paper", A("2107.03374")]],
+      ["RULER", "", "Synthetic long-context tasks such as multi-needle retrieval at increasing lengths.", "Llama 3.1 8B W4A16: 81.1 vs 82.8.", ["RULER paper", A("2404.06654")]],
+      ["TruthfulQA", "", "Questions designed to elicit common misconceptions.", "HF blog Open LLM v1 scores.", ["TruthfulQA paper", A("2109.07958")]],
+      ["DocVQA", "ANLS", "Questions about scanned document images. Scored with ANLS, an edit-distance similarity that gives partial credit for near-miss text.", "LLaVA-Next keeps 98–99% at 4 bits.", ["DocVQA paper", A("2007.00398")]],
+      ["ChartQA", "relaxed accuracy", "Questions about charts that often need reading values and arithmetic. Numeric answers within 5% count as correct.", "", ["ChartQA paper", A("2203.10244")]],
+      ["AI2D", "", "Multiple-choice questions on grade-school science diagrams.", "", ["AI2D paper", A("1603.07396")]],
+      ["MMBench", "CircularEval", "Multiple-choice vision-language questions; CircularEval rotates the options and requires every rotation to be right.", "", ["MMBench paper", A("2307.06281")]],
+      ["MME", "Perception, Cognition", "Yes/no questions over 14 subtasks, two per image. Perception sums 10 subtasks (max 2,000); Cognition sums 4 (max 800).", "MME-Cognition loses 9–19% at 4 bits.", ["MME paper", A("2306.13394")]],
+    ]},
+    { id: "g-serving", name: "Memory and speed", intro: "What the VRAM and throughput columns measure.", items: [
+      ["Weights in VRAM", "", "GPU memory taken by the parameters alone. Excludes KV cache, activations and CUDA graph buffers.", "Qwen vLLM table.", R.cfg],
+      ["KV cache", "KV cache tokens", "Attention keys and values stored for every processed token. vLLM fills memory left after weights with paged KV blocks; “KV cache tokens” is how many fit across all requests.", "BF16 fit 17,873 tokens; FP8 166,074 on the same card.", ["PagedAttention paper", A("2309.06180")]],
+      ["Prefill", "prompt processing, pp512", "Processing the input prompt, all tokens in parallel. Compute-bound, so weight-only quantization barely speeds it up.", "Qwen GGUF prompt speed stayed between 2,729 and 3,333 tok/s.", R.cfg],
+      ["Decode", "token generation, tg128", "Generating one token at a time. Each step reads all weights, so it is memory-bandwidth bound and speeds up roughly with file size.", "Qwen Q4_K_M decodes 2.7× faster than BF16.", R.cfg],
+      ["TTFT", "time to first token", "Delay from sending a request to receiving the first output token: queueing plus prefill.", "Spheron: 740 ms p50 for vLLM at 100 concurrent.", ["Spheron benchmark", "https://www.spheron.network/blog/vllm-vs-tensorrt-llm-vs-sglang-benchmarks"]],
+      ["Latency", "", "Wall time for a request end to end.", "Qwen 512 in / 128 out; Red Hat synchronous code completion.", R.rh],
+      ["Throughput", "tok/s", "Output tokens per second across many concurrent requests. Limited by KV cache room and batching, not just kernel speed.", "BF16 117 tok/s vs FP8 338 on the same card.", R.cfg],
+      ["vLLM serving flags", "gpu-memory-utilization, max-num-seqs, max-model-len", "Share of VRAM vLLM may claim, maximum concurrent sequences, and maximum context per sequence.", "Qwen runs: 0.90, 32, 4,096.", R.vq],
+      ["Compute capability", "Ampere, Ada, Hopper, Blackwell", "NVIDIA's architecture version: 8.0/8.6 Ampere, 8.9 Ada, 9.0 Hopper, 10.x/12.x Blackwell. It decides which low-precision math runs natively.", "A10G is 8.6, so FP8 ran weight-only.", ["NVIDIA CUDA GPUs", "https://developer.nvidia.com/cuda-gpus"]],
+    ]},
+  ];
+  const esc = (t) => t.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const total = G.reduce((n, g) => n + g.items.length, 0);
+  $("#g-jump").innerHTML = G.map(g => `<a href="#${g.id}">${g.name}</a>`).join("");
+  function renderGloss(q) {
+    q = (q || "").trim().toLowerCase();
+    let shown = 0, html = "";
+    G.forEach(g => {
+      const items = g.items.filter(it => !q || [it[0], it[1], it[2], it[3]].join(" ").toLowerCase().includes(q));
+      if (!items.length) return;
+      shown += items.length;
+      html += `<div class="g-group" id="${g.id}"><h3>${g.name}</h3><div class="g-intro">${g.intro}</div><div class="g-list">` +
+        items.map(([t, al, d, h, ref, more]) => {
+          const refs = [ref, ...(more || [])].filter(Boolean).map(r => `<a href="${r[1]}" target="_blank" rel="noopener">${esc(r[0])}</a>`).join(" · ");
+          return `<div class="g-item"><div class="g-term">${esc(t)}${al ? `<span class="alias">${esc(al)}</span>` : ""}</div><div class="g-def">${esc(d)}${h ? `<span class="here">${esc(h)}</span>` : ""}<span class="g-ref">Ref: ${refs}</span></div></div>`;
+        }).join("") + `</div></div>`;
+    });
+    $("#g-body").innerHTML = html || `<div class="g-empty">No terms match “${esc(q)}”.</div>`;
+    $("#g-count").textContent = q ? `${shown} of ${total} terms` : `${total} terms`;
+  }
+  renderGloss("");
+  $("#g-search").addEventListener("input", e => renderGloss(e.target.value));
+
+  function drawAll() { qwenGsm(); qwenKld(); l2Pareto(); l3Bits(); gemmaChart(); engBars(); sphChart(); uctxChart(); }
+  drawAll();
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+  // redraw on theme change so SVG colors read from tokens
+  new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  try { window.matchMedia && matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll); } catch (e) {}
+  addEventListener("scroll", hideTip, { passive: true });
+
+  /* ---------------- EXPLORER ---------------- */
+  const rng = (seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; })(7);
+  const baseW = Array.from({ length: 48 }, () => { const u = Math.max(1e-9, rng()), v = rng(); return Math.max(-2.4, Math.min(2.4, Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * 0.8)); });
+  function explorer() {
+    const host = $("#c-explorer"); if (!host) return;
+    const bits = +$("#ex-bits").value, outl = $("#ex-outlier").checked;
+    $("#ex-bits-out").textContent = bits;
+    const w = outl ? [...baseW.slice(0, 47), 3.4] : baseW;
+    const lo = Math.min(...w), hi = Math.max(...w), L = 2 ** bits, step = (hi - lo) / (L - 1);
+    const q = w.map(v => Math.round((v - lo) / step) * step + lo);
+    const err = w.map((v, i) => Math.abs(v - q[i]));
+    const used = new Set(q.map(v => Math.round((v - lo) / step))).size;
+    const W = Math.max(300, host.clientWidth), H = 150, m = { t: 22, r: 14, b: 26, l: 14 };
+    const { g, iw } = frame(host, W, H, m);
+    const x = v => ((v + 3.6) / 7.2) * iw, yA = 14, yB = 84;
+    if (L <= 64) for (let k = 0; k < L; k++) { const v = lo + k * step; el("line", { x1: x(v), x2: x(v), y1: yB - 12, y2: yB + 12, stroke: css("--rule-strong"), "stroke-width": 1 }, g); }
+    else el("rect", { x: x(lo), y: yB - 12, width: x(hi) - x(lo), height: 24, fill: css("--accent-soft") }, g);
+    txt(g, 0, yA - 12, "original weights", {}); txt(g, 0, yB - 18, `rounded to ${L} levels`, {});
+    w.forEach((v, i) => {
+      el("line", { x1: x(v), x2: x(q[i]), y1: yA + 4, y2: yB - 4, stroke: css("--ink-3"), "stroke-opacity": .35, "stroke-width": 1 }, g);
+      el("circle", { cx: x(v), cy: yA, r: 3.6, fill: css("--surface"), stroke: css("--ink-2"), "stroke-width": 1.4 }, g);
+      el("circle", { cx: x(q[i]), cy: yB, r: 3.6, fill: css(outl && i === 47 ? "--s2" : "--accent"), stroke: css("--surface"), "stroke-width": 1 }, g);
+    });
+    el("line", { x1: 0, x2: iw, y1: yB + 22, y2: yB + 22, class: "axis" }, g);
+    [-3, -2, -1, 0, 1, 2, 3].forEach(t => txt(g, x(t), yB + 38, t, { "text-anchor": "middle" }));
+    const mean = err.reduce((a, b) => a + b, 0) / err.length, mx = Math.max(...err);
+    const gb = bits * 7e9 / 8 / 1e9;
+    $("#ex-stats").innerHTML = [[`${L}`, "levels available"], [`${used} / ${L}`, "levels actually used"], [mean.toFixed(3), "mean rounding error"], [`${gb.toFixed(1)} GB`, "7B weights at this width, before scales"]]
+      .map(([b, t]) => `<div class="ex-stat"><b>${b}</b><span>${t}</span></div>`).join("");
+    $("#ex-note").textContent = outl
+      ? `One large weight stretches the range, so the other 47 crowd into fewer levels (${used} of ${L} used) and their error grows. Smaller groups, AWQ's channel scaling and GPTQ's error correction all exist to deal with this.`
+      : bits >= 6 ? `At ${bits} bits the rounded weights sit almost on top of the originals. This is why 8-bit formats measure as lossless in every study here.`
+      : bits <= 2 ? `With only ${L} levels most weights land far from where they started. This is the regime where generic methods collapsed in the LLaMA3 and LLaVA tables.`
+      : `Each weight moves to its nearest level. Toggle the outlier to see why one extreme value hurts every other weight in its group.`;
+  }
+  $("#ex-bits").addEventListener("input", explorer);
+  $("#ex-outlier").addEventListener("change", explorer);
+
+  /* ---------------- QUIZ ---------------- */
+  const QZ = [
+    { q: "On Qwen3.5-9B, which format matched BF16's GSM8K strict score exactly?", o: ["GPTQ W4A16", "FP8 dynamic", "AWQ W4A16", "GGUF Q4_K_M"], a: 1, e: "FP8 dynamic scored 87.5%, the same as BF16. GPTQ scored 81.8, AWQ 75.7 and Q4_K_M 84.8.", t: "qwen" },
+    { q: "Q4_K_M's perplexity is within 0.3% of BF16. How often does it pick a different next token?", o: ["About 0.3% of tokens", "About 2.5%", "About 7.5%", "About 25%"], a: 2, e: "Top-1 agreement is 92.5%, so about one token in 13 differs. Perplexity hides this; KL divergence and top-1 agreement show it.", t: "qwen" },
+    { q: "Why did the 4-bit vLLM checkpoint of Qwen3.5-9B need 7.3 GiB when Q4_K_M needed 5.4 GiB?", o: ["The embedding and output head stayed in BF16", "vLLM stores the KV cache inside the checkpoint", "AWQ secretly uses 6 bits", "GGUF drops some layers"], a: 0, e: "The 248K-token vocabulary makes the embedding and output head about 1.9 GiB each in BF16. llm-compressor's recipe left both unquantized; GGUF quantized them.", t: "qwen" },
+    { q: "On an RTX 5090 at 32 concurrent requests, how did vLLM's throughput compare with Ollama's (draft off)?", o: ["About the same", "About 2× higher", "About 5× higher", "Over 12× higher"], a: 3, e: "936 tok/s for vLLM against 74 for Ollama. Single-stream speeds were close; batching made the difference.", t: "engine-bench" },
+    { q: "Which GPU generations run FP8 matmuls natively in vLLM?", o: ["Volta and Turing", "Ampere only", "Ada and Hopper", "Any GPU with 24 GB or more"], a: 2, e: "vLLM's hardware table lists FP8 W8A8 for Ada, Hopper and AMD. On Ampere, FP8 checkpoints run weight-only through Marlin.", t: "engine-matrix" },
+  ];
+  let qAnswered = 0, qRight = 0;
+  $("#quiz-body").innerHTML = QZ.map((z, i) => `<div class="q" id="q${i}"><div class="q-text">${i + 1}. ${z.q}</div><div class="q-opts">${z.o.map((o, j) => `<button type="button" class="q-opt" data-q="${i}" data-o="${j}">${o}</button>`).join("")}</div><div class="q-fb" id="qfb${i}" hidden></div></div>`).join("");
+  const scoreLine = () => { $("#quiz-score").textContent = qAnswered ? `${qRight} of ${qAnswered} correct so far · ${QZ.length - qAnswered} to go` : `${QZ.length} questions · tap an answer`; };
+  scoreLine();
+  $("#quiz-body").addEventListener("click", e => {
+    const b = e.target.closest(".q-opt"); if (!b || b.disabled) return;
+    const i = +b.dataset.q, j = +b.dataset.o, z = QZ[i];
+    document.querySelectorAll(`#q${i} .q-opt`).forEach(o => { o.disabled = true; if (+o.dataset.o === z.a) o.classList.add("right"); });
+    if (j !== z.a) b.classList.add("wrong");
+    qAnswered++; if (j === z.a) qRight++;
+    const fb = $("#qfb" + i); fb.hidden = false;
+    fb.innerHTML = `<b class="${j === z.a ? "ok" : "no"}">${j === z.a ? "Correct" : "Not quite"}</b>${z.e} <a href="#${z.t}">See the data</a>`;
+    scoreLine();
+  });
+
+  /* ---------------- TABS + ROUTING ---------------- */
+  const tabBtns = [...document.querySelectorAll(".tab")];
+  const panelIds = tabBtns.map(t => t.dataset.panel);
+  let seen = new Set(["start"]);
+  try { JSON.parse(localStorage.getItem("ql-seen") || "[]").forEach(x => panelIds.includes(x) && seen.add(x)); } catch (e) {}
+  function paintProgress() {
+    tabBtns.forEach(t => t.classList.toggle("seen", seen.has(t.dataset.panel)));
+    $("#progress-bar").style.width = Math.round((seen.size / panelIds.length) * 70) + "%";
+    $("#progress-t").textContent = `${seen.size} of ${panelIds.length} chapters opened`;
+    try { localStorage.setItem("ql-seen", JSON.stringify([...seen])); } catch (e) {}
+  }
+  function scrollToTabs() { const top = $("header.top").offsetHeight; if (scrollY > top) scrollTo({ top, behavior: "auto" }); }
+  function showPanel(id, scroll) {
+    panelIds.forEach(pid => { const p = document.getElementById(pid); const on = pid === id; p.hidden = !on; if (on) { p.classList.remove("enter"); void p.offsetWidth; p.classList.add("enter"); } });
+    tabBtns.forEach(t => t.setAttribute("aria-selected", String(t.dataset.panel === id)));
+    const active = tabBtns.find(t => t.dataset.panel === id); if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+    seen.add(id); paintProgress(); hideTip();
+    if (scroll) scrollToTabs();
+    requestAnimationFrame(() => { drawAll(); explorer(); });
+  }
+  function showSub(group, target) {
+    document.querySelectorAll(`.subtab[data-group="${group}"]`).forEach(b => {
+      const on = b.dataset.target === target; b.setAttribute("aria-selected", String(on));
+      const sec = document.getElementById(b.dataset.target); if (sec) sec.hidden = !on;
+    });
+    requestAnimationFrame(drawAll);
+  }
+  function route(token, scroll) {
+    if (panelIds.includes(token)) { showPanel(token, scroll); }
+    else {
+      const elx = document.getElementById(token); if (!elx) return false;
+      const panel = elx.closest(".panel"); if (!panel) return false;
+      showPanel(panel.id, false);
+      const sb = elx.closest("section.sub"); if (sb) { const btn = document.querySelector(`.subtab[data-target="${sb.id}"]`); if (btn) showSub(btn.dataset.group, sb.id); }
+      requestAnimationFrame(() => elx.scrollIntoView && elx.scrollIntoView({ block: "start" }));
+    }
+    try { history.replaceState(null, "", "#" + token); } catch (e) {}
+    return true;
+  }
+  tabBtns.forEach((t, i) => {
+    t.addEventListener("click", () => route(t.dataset.panel, true));
+    t.addEventListener("keydown", e => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const n = tabBtns[(i + (e.key === "ArrowRight" ? 1 : tabBtns.length - 1)) % tabBtns.length]; n.focus(); route(n.dataset.panel, false);
+    });
+  });
+  document.querySelectorAll(".subtab").forEach(b => b.addEventListener("click", () => { showSub(b.dataset.group, b.dataset.target); try { history.replaceState(null, "", "#" + b.dataset.target); } catch (e) {} }));
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[href^="#"]'); if (!a) return;
+    const token = a.getAttribute("href").slice(1);
+    if (token && document.getElementById(token)) { e.preventDefault(); route(token, true); }
+  });
+  paintProgress();
+  const initial = (location.hash || "").slice(1);
+  if (!(initial && route(initial, false))) explorer();
+})();
+</script>
+
+</body></html>
