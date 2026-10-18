@@ -1,0 +1,41 @@
+  07:44:59  [1/4] make the GGUF (quantize, download, or baseline)
+    Qwen3-4B-Instruct-2507-F16.gguf: 8.051 GB
+  07:44:59  [2/4] speed: llama-bench pp512 / tg128
+    2561.9 tok/s prefill, 30.7 tok/s decode, TTFT 199.9 ms
+  07:46:21  [3/4] tasks via llama-server: GSM8K + ARC, 250 questions each
+    GSM8K  1/250    0%  0:00:04 elapsed  ~0:17:31 left  20 tok/s across 8 slots
+    GSM8K  10/250    4%  0:00:24 elapsed  ~0:09:42 left  98 tok/s across 8 slots
+    GSM8K  19/250    8%  0:00:39 elapsed  ~0:08:01 left  128 tok/s across 8 slots
+    GSM8K  32/250   13%  0:00:55 elapsed  ~0:06:20 left  151 tok/s across 8 slots
+    GSM8K  40/250   16%  0:01:11 elapsed  ~0:06:13 left  141 tok/s across 8 slots
+    GSM8K  51/250   20%  0:01:26 elapsed  ~0:05:37 left  154 tok/s across 8 slots
+    GSM8K  61/250   24%  0:01:43 elapsed  ~0:05:21 left  148 tok/s across 8 slots
+    GSM8K  72/250   29%  0:01:59 elapsed  ~0:04:54 left  156 tok/s across 8 slots
+    GSM8K  82/250   33%  0:02:14 elapsed  ~0:04:36 left  154 tok/s across 8 slots
+    GSM8K  93/250   37%  0:02:32 elapsed  ~0:04:16 left  154 tok/s across 8 slots
+    GSM8K  103/250   41%  0:02:47 elapsed  ~0:03:59 left  156 tok/s across 8 slots
+    GSM8K  113/250   45%  0:03:02 elapsed  ~0:03:41 left  157 tok/s across 8 slots
+    GSM8K  119/250   48%  0:03:18 elapsed  ~0:03:38 left  151 tok/s across 8 slots
+    GSM8K  132/250   53%  0:03:34 elapsed  ~0:03:11 left  157 tok/s across 8 slots
+    GSM8K  142/250   57%  0:03:50 elapsed  ~0:02:55 left  155 tok/s across 8 slots
+    GSM8K  151/250   60%  0:04:06 elapsed  ~0:02:41 left  155 tok/s across 8 slots
+    GSM8K  160/250   64%  0:04:25 elapsed  ~0:02:29 left  156 tok/s across 8 slots
+    GSM8K  173/250   69%  0:04:41 elapsed  ~0:02:05 left  157 tok/s across 8 slots
+    GSM8K  183/250   73%  0:05:00 elapsed  ~0:01:49 left  156 tok/s across 8 slots
+    GSM8K  195/250   78%  0:05:15 elapsed  ~0:01:28 left  158 tok/s across 8 slots
+    GSM8K  205/250   82%  0:05:31 elapsed  ~0:01:12 left  157 tok/s across 8 slots
+    GSM8K  214/250   86%  0:05:47 elapsed  ~0:00:58 left  158 tok/s across 8 slots
+    GSM8K  227/250   91%  0:06:07 elapsed  ~0:00:37 left  157 tok/s across 8 slots
+    GSM8K  239/250   96%  0:06:23 elapsed  ~0:00:17 left  157 tok/s across 8 slots
+    GSM8K  245/250   98%  0:06:40 elapsed  ~0:00:08 left  154 tok/s across 8 slots
+    GSM8K  250/250  100%  0:06:59 elapsed  152 tok/s across 8 slots
+    ARC  1/250    0%  0:00:01 elapsed  ~0:05:45 left  4 tok/s across 8 slots
+    ARC  129/250   52%  0:00:16 elapsed  ~0:00:15 left  38 tok/s across 8 slots
+    ARC  231/250   92%  0:00:31 elapsed  ~0:00:02 left  36 tok/s across 8 slots
+    ARC  250/250  100%  0:00:33 elapsed  36 tok/s across 8 slots
+  07:53:59  [4/4] drift vs baseline: llama-perplexity KL divergence
+    KLD reference chunks  1/20    5%  0:00:05 elapsed  ~0:01:50 left
+    KLD reference chunks  20/20  100%  0:00:13 elapsed
+  RESULT  GSM8K 0.916/0.928  ARC 0.880  KLD 0.0  PPL 11.193
+          8.051 GB weights, peak 9.495 GB  |  decode 30.7 tok/s, TTFT 199.9 ms, GSM8K p50 latency 11.731 s
+          time: make 0.0s, bench 81.5s, tasks 458.4s, kld 13.7s, total 553.7s

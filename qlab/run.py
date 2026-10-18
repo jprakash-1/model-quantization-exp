@@ -132,7 +132,7 @@ def run_gguf(variant, metrics, out, keep=False):
                 evals = tasks.run(server.generate)
             finally:
                 server.close()
-    metrics |= {"peak_gpu_gb": mem.peak_gb, "gpu_used_before_gb": mem.start_gb, **gg.Server.buffers(out / "server.log")}
+    metrics |= {"peak_gpu_gb": mem.peak_gb, "gpu_used_before_gb": mem.start_gb}
     step(4, 4, "drift vs baseline: llama-perplexity KL divergence")
     with phase(metrics, "kld"):
         metrics |= gg.kld(model, variant, out)
@@ -178,16 +178,36 @@ def save(out, metrics, evals):
           f"          time: " + ", ".join(f"{k[5:-2]} {v}s" for k, v in m.items() if k.startswith("time_")))
 
 
+def todo(track, variants):
+    """Variants without a metrics.json yet."""
+    return [v for v in variants if not (out_dir(track, v) / "metrics.json").exists()]
+
+
+def reference(track):
+    """The track's baseline and where it keeps the log-probs every other variant's KLD is measured against."""
+    if track == "hf":
+        from qlab import hf_backend as hf
+        return hf.BASELINE, hf.ref_dir()
+    from qlab import gguf_backend as gg
+    return gg.BASELINE, gg.ref_path()
+
+
 def run_all(track, variants, force=False):
     start, ran = time.time(), 0
+    base, ref = reference(track)
+    # the reference lives in /tmp: in a fresh session, re-run the baseline before measuring anything new against it
+    redo_base = bool(todo(track, variants)) and base in variants and not ref.exists() and not force
+    if redo_base:
+        print(f"KLD reference missing ({ref}): re-running {base} first", flush=True)
     for i, v in enumerate(variants, 1):
-        done = (out_dir(track, v) / "metrics.json").exists() and not force
+        again = force or (redo_base and v == base)
+        done = (out_dir(track, v) / "metrics.json").exists() and not again
         left = len(variants) - i + 1
         eta = f", ~{hms((time.time() - start) / ran * left)} left" if ran else ""
         if not done:
             print(f"\n=== {track} {i}/{len(variants)}: {v}  ({hms(time.time() - start)} into the track{eta}) ===", flush=True)
         t0 = time.time()
-        run(track, v, force)
+        run(track, v, again)
         if not done:
             ran += 1
             print(f"  {track}-{v} took {hms(time.time() - t0)}", flush=True)

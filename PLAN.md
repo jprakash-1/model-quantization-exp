@@ -13,7 +13,7 @@ Everything runs on **Kaggle** on the free **2× NVIDIA T4** accelerator. Nothing
 |---|---|
 | **2 × Tesla T4, 15 GB each** (Turing, compute capability 7.5, ~320 GB/s), driver 580 / CUDA 13.0 | Everything runs: bitsandbytes, HQQ, llama.cpp CUDA (with fast int8 kernels). |
 | **Two GPUs** | **One track per GPU, in parallel.** The HF track runs in the notebook kernel on GPU 0. The GGUF track runs as a background job (`python -m qlab.run gguf ...`) on GPU 1. The model is never split across GPUs, so memory numbers stay clean. |
-| T4 has **no BF16, no FP8** | The 16-bit baseline is **FP16** (the code picks BF16 automatically on an A100/L4). FP8 is in the list *on purpose*: watching it fail is the lesson "your GPU decides the format". |
+| T4 has **no BF16, no FP8** | The 16-bit baseline is **FP16** (the code picks BF16 automatically on an A100/L4). FP8 is in the list *on purpose*: transformers dequantizes it to 16-bit on a T4, so it measures only the FP8 rounding error, with no memory or speed gain. Lesson: "your GPU decides the format". |
 | 4 CPU cores shared by both tracks | llama.cpp is compiled *before* either track starts measuring, and `llama-quantize` is limited to 2 threads. NVML ignores `CUDA_VISIBLE_DEVICES`, so `gpu.py` maps it to the right physical GPU. |
 | ~70 GB disk, 20 GB of it persisted in `/kaggle/working` | Big files go to `/tmp/qlab`, results to the repo's `results/` (persisted). GGUF quants are deleted after measuring (rolling). |
 | 12 h max per session, ~30 GPU-h per week | Every variant saves its own `metrics.json`. Re-running skips finished ones, so a timeout loses nothing. |
@@ -39,7 +39,7 @@ Everything runs on **Kaggle** on the free **2× NVIDIA T4** accelerator. Nothing
 | `bnb-nf4-dq` | NF4 + double-quantized scales | What do the scales cost? |
 | `unsloth-dyn4` | NF4, sensitive layers kept 16-bit | Uniform vs mixed precision |
 | `hqq4` / `hqq3` / `hqq2` | calibration-free, group 64 | Where is the cliff? |
-| `fp8` | Qwen's FP8 checkpoint | fails on a T4: needs compute capability ≥ 8.9 |
+| `fp8` | Qwen's FP8 checkpoint | needs compute capability ≥ 8.9; on a T4 it is dequantized to 16-bit on load |
 | `torchao-int8` | optional, needs an extra install | |
 
 **Track 2: llama.cpp GGUF** (`qlab/gguf_backend.py`), built from source with CUDA on Kaggle
@@ -60,7 +60,7 @@ Everything runs on **Kaggle** on the free **2× NVIDIA T4** accelerator. Nothing
 | Memory | weights size (GB), bits per weight, **peak GPU memory** | `get_memory_footprint()` / GGUF file size. Peak is NVML-sampled every 50 ms, identically for in-process (HF) and `llama-server`. |
 | Speed | **prefill tok/s**, **decode tok/s**, **TTFT** (512-token prompt) | single stream, median of 3. HF: timed `forward` + `generate`. GGUF: `llama-bench`. |
 | Cost to make | quantization time, load time | wall clock |
-| Drift | **mean / p99 KL divergence** vs baseline, **top-1 agreement**, perplexity | `Salesforce/wikitext` wikitext-2 test, 20 × 512 tokens. HF: our own code against saved baseline log-probs. GGUF: `llama-perplexity --kl-divergence`. |
+| Drift | **mean / p99 KL divergence** vs baseline, **top-1 agreement**, perplexity | `Salesforce/wikitext` wikitext-2 test, 20 × 512 tokens. HF: our own code against saved baseline log-probs. GGUF: `llama-perplexity --kl-divergence`. Compare drift within a track only: llama-perplexity scores just the second half of each chunk, so its perplexity is lower (11.2 vs 14.4 for the same FP16 model). |
 | Quality | **GSM8K** strict (`#### N`) and flexible (last number) | `openai/gsm8k`, first 250 test questions |
 | | **ARC-Challenge** | `allenai/ai2_arc`, first 250 test questions |
 | | **answers lost / gained vs baseline** | paired per question, more sensitive than accuracy at n=250 (SE ≈ ±2.5 pts) |
@@ -91,7 +91,7 @@ model-quantization-exp/
 
 | File | Contents |
 |---|---|
-| `metrics.json` | **memory:** weights GB, bits/weight, peak GPU (NVML), torch peak allocated/reserved (HF), llama.cpp weights / KV cache / compute buffers (GGUF) · **speed:** prefill tok/s, decode tok/s, TTFT, each with run-to-run spread and the raw runs · **workload:** GSM8K/ARC wall time, throughput, per-question latency p50/p95, llama-server TTFT p50/p95 and decode tok/s under 8 concurrent requests · **quality:** GSM8K strict/flexible, ARC, perplexity, mean/p99 KLD, top-1 agreement, tokens per answer, answers that hit the token cap · **time:** each phase (make/load, bench, tasks, KLD) and total, start/finish timestamps · **context:** GPU, driver, library versions, llama.cpp commit, run settings |
+| `metrics.json` | **memory:** weights GB, bits/weight, peak GPU (NVML), torch peak allocated/reserved (HF) · **speed:** prefill tok/s, decode tok/s, TTFT, each with run-to-run spread and the raw runs · **workload:** GSM8K/ARC wall time, throughput, per-question latency p50/p95, llama-server TTFT p50/p95 and decode tok/s under 8 concurrent requests · **quality:** GSM8K strict/flexible, ARC, perplexity, mean/p99 KLD, top-1 agreement, tokens per answer, answers that hit the token cap · **time:** each phase (make/load, bench, tasks, KLD) and total, start/finish timestamps · **context:** GPU, driver, library versions, llama.cpp commit, run settings |
 | `eval.json` | every GSM8K/ARC question: reply, correct or not, tokens, latency (+ server TTFT/decode for GGUF) |
 | `run.log` | everything printed while the variant ran |
 | `quant.log`, `kld.log`, `server.log` | raw llama.cpp tool output (GGUF) |
@@ -106,6 +106,7 @@ model-quantization-exp/
 3. First time, set `N_QUESTIONS = 100` in cell 2 and run the cells interactively to catch problems early.
 4. Then set it to 250 and **Save Version → Save & Run All (Commit)** to run unattended.
 5. Download `results/` from the notebook output, or push it back with the last cell.
+6. Re-runs resume: variants already in `results/` (committed to the repo) are skipped, and only the missing ones run. The KLD references live in `/tmp`, so in a new session the code re-runs each track's baseline first when it has anything new to measure.
 
 What the notebook does, in order:
 

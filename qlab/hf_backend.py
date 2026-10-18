@@ -23,9 +23,15 @@ def bnb4(quant_type, double=False):
                               bnb_4bit_use_double_quant=double, bnb_4bit_compute_dtype=DTYPE)
 
 
-def hqq(bits):
-    from transformers import HqqConfig
-    return HqqConfig(nbits=bits, group_size=64)
+def load_hqq(repo, bits):
+    """Transformers 5 no longer quantizes to HQQ on load, so call the hqq library directly:
+    load 16-bit on the CPU, then swap every nn.Linear (except lm_head) for an HQQLinear on the GPU."""
+    from hqq.core.quantize import BaseQuantizeConfig
+    from hqq.models.hf.base import AutoHQQHFModel
+    model = AutoModelForCausalLM.from_pretrained(repo, dtype=DTYPE, device_map="cpu")
+    AutoHQQHFModel.quantize_model(model, quant_config=BaseQuantizeConfig(nbits=bits, group_size=64),
+                                  compute_dtype=DTYPE, device="cuda:0")
+    return model
 
 
 def torchao_int8():
@@ -42,12 +48,13 @@ VARIANTS = {
     "bnb-nf4-dq":   (None, lambda: bnb4("nf4", double=True)),                    # + quantized scales
     "bnb-fp4":      (None, lambda: bnb4("fp4")),
     "unsloth-dyn4": ("unsloth/{name}-unsloth-bnb-4bit", None),                   # NF4 but sensitive layers left 16-bit
-    "hqq4":         (None, lambda: hqq(4)),                                      # calibration-free, g64
-    "hqq3":         (None, lambda: hqq(3)),
-    "hqq2":         (None, lambda: hqq(2)),
+    "hqq4":         (None, None),                                                # calibration-free, g64 (load_hqq)
+    "hqq3":         (None, None),
+    "hqq2":         (None, None),
     "torchao-int8": (None, torchao_int8),                                        # int8 weight-only
-    "fp8":          ("{id}-FP8", None),                                          # needs compute capability >= 8.9
+    "fp8":          ("{id}-FP8", None),  # below compute capability 8.9 (T4) transformers dequantizes it to 16-bit
 }
+HQQ_BITS = {"hqq4": 4, "hqq3": 3, "hqq2": 2}
 
 
 def repo_for(variant):
@@ -60,6 +67,8 @@ def download(variants):
     Quantize-on-load variants (bnb, hqq, torchao) all share the original repo; variants already measured are skipped."""
     from huggingface_hub import snapshot_download
     todo = [v for v in variants if not (config.RESULTS / f"hf-{v}" / "metrics.json").exists()]
+    if todo and not ref_dir().exists():
+        todo.append(BASELINE)  # run.run_all re-runs the baseline to rebuild the KLD reference
     repos = list(dict.fromkeys(repo_for(v) for v in todo))
     for i, repo in enumerate(repos, 1):
         print(f"[{i}/{len(repos)}] downloading {repo}", flush=True)
@@ -71,14 +80,23 @@ class HFModel:
         repo, make_qcfg = repo_for(variant), VARIANTS[variant][1]
         kwargs = {"quantization_config": make_qcfg()} if make_qcfg else {}
 
-        print(f"    loading {repo}" + (f" + quantizing on load ({type(kwargs['quantization_config']).__name__})" if kwargs else ""),
-              flush=True)
-        t0 = time.perf_counter()
+        how = (f" + quantizing on load ({type(kwargs['quantization_config']).__name__})" if kwargs
+               else f" + quantizing with hqq ({HQQ_BITS[variant]}-bit)" if variant in HQQ_BITS else "")
+        print(f"    loading {repo}{how}", flush=True)
+        t0, before = time.perf_counter(), torch.cuda.memory_allocated()
         self.tok = AutoTokenizer.from_pretrained(config.MODEL_ID, padding_side="left")
-        self.model = AutoModelForCausalLM.from_pretrained(repo, dtype=DTYPE, device_map="cuda:0", **kwargs).eval()
+        if variant in HQQ_BITS:
+            self.model = load_hqq(repo, HQQ_BITS[variant]).eval()
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(repo, dtype=DTYPE, device_map="cuda:0", **kwargs).eval()
+        for mod in self.model.modules():  # pre-quantized repos bring their own compute dtype (Unsloth: bf16, emulated on a T4)
+            if getattr(mod, "compute_dtype", None) is not None:
+                mod.compute_dtype = DTYPE
         self.load_s = round(time.perf_counter() - t0, 1)
         self.repo = repo
-        self.weights_gb = round(self.model.get_memory_footprint() / 1e9, 3)
+        # hqq keeps scales/zeros outside the parameters, so measure what the weights take on the GPU instead
+        self.weights_gb = round((torch.cuda.memory_allocated() - before if variant in HQQ_BITS
+                                 else self.model.get_memory_footprint()) / 1e9, 3)
         self.n_params = sum(p.numel() for p in self.model.parameters())  # packed for quantized models; use the baseline's
         print(f"    loaded in {self.load_s}s, weights {self.weights_gb} GB", flush=True)
 

@@ -9,7 +9,7 @@ from qlab import config
 COLUMNS = [
     "track", "variant",
     # memory
-    "bpw", "size_gb", "peak_gpu_gb", "torch_peak_allocated_gb", "weights_vram_gb", "kv_cache_gb", "compute_buffer_gb",
+    "bpw", "size_gb", "peak_gpu_gb", "torch_peak_allocated_gb",
     # single-stream speed (median of 3, with spread)
     "prefill_tps", "prefill_tps_std", "ttft_ms", "decode_tps", "decode_tps_std",
     # drift vs baseline

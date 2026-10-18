@@ -172,9 +172,13 @@ def bench(model):
                            "build_commit": pp.get("build_commit"), "gpu_info": pp.get("gpu_info")}}
 
 
+def ref_path():
+    return config.WORK / f"kld-ref-{config.MODEL_NAME}.kld"
+
+
 def kld(model, variant, out):
     """llama-perplexity: the baseline saves its logits once; every quant is compared against them."""
-    ref = config.WORK / f"kld-ref-{config.MODEL_NAME}.kld"
+    ref = ref_path()
     common = [tool("llama-perplexity"), "-m", str(model), "-ngl", "99", "--kl-divergence-base", str(ref)]
     if variant == BASELINE:
         t = stream(common + ["-f", str(config.DATA / "wiki.test.raw"), "-c", str(config.CTX), "--chunks", str(config.KLD_CHUNKS)],
@@ -232,11 +236,3 @@ class Server:
         self.proc.terminate()
         self.proc.wait(30)
         self.log.close()
-
-    @staticmethod
-    def buffers(log):
-        """GPU memory llama.cpp reports at load: weights, KV cache, compute scratch (GB)."""
-        text = log.read_text()
-        mib = lambda what: sum(map(float, re.findall(rf"CUDA\d+ {what} buffer size\s*=\s*([\d.]+) MiB", text))) or None
-        gb = lambda v: round(v / 1024, 3) if v else None
-        return {"weights_vram_gb": gb(mib("model")), "kv_cache_gb": gb(mib("KV")), "compute_buffer_gb": gb(mib("compute"))}
